@@ -111,7 +111,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet moveSection:section toSection:newSection animationOptions:animationOptions];
+  // TODO: Actually move.
+  [_changeSet deleteSections:[NSIndexSet indexSetWithIndex:section] animationOptions:animationOptions];
+  [_changeSet insertSections:[NSIndexSet indexSetWithIndex:newSection] animationOptions:animationOptions];
   [self endUpdates];
 }
 
@@ -145,7 +147,9 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [_changeSet moveItemAtIndexPath:indexPath toIndexPath:newIndexPath animationOptions:animationOptions];
+  // TODO: Actually move.
+  [_changeSet deleteItems:@[ indexPath ] animationOptions:animationOptions];
+  [_changeSet insertItems:@[ newIndexPath ] animationOptions:animationOptions];
   [self endUpdates];
 }
 
