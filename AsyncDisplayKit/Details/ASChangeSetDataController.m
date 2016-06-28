@@ -95,7 +95,7 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [self deleteSections:sections withAnimationOptions:animationOptions];
+  [_changeSet deleteSections:sections animationOptions:animationOptions];
   [self endUpdates];
 }
 
@@ -103,7 +103,7 @@
 {
   ASDisplayNodeAssertMainThread();
   [self beginUpdates];
-  [self reloadSections:sections withAnimationOptions:animationOptions];
+  [_changeSet reloadSections:sections animationOptions:animationOptions];
   [self endUpdates];
 }
 
