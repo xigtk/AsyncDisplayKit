@@ -24,6 +24,8 @@
 #import "OverviewASTableNode.h"
 #import "OverviewASPagerNode.h"
 
+#import "LayoutExamplesViewController.h"
+
 #import <AsyncDisplayKit/AsyncDisplayKit.h>
 
 
@@ -439,7 +441,16 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
     [parentNode addSubnode:childNode2];
     [parentNode addSubnode:childNode3];
     [mutableLayoutSpecData addObject:parentNode];
-    
+  
+// Layout Specs
+// ---------------------------------------------------------------------------------------------------------
+    NSMutableArray *mutableLayoutExamplesData = [NSMutableArray array];
+  
+#pragma mark Layout Examples
+    parentNode = [self parentNodeWithChild:nil];
+    parentNode.entryTitle = @"Layout Examples";
+    parentNode.entryDescription = @"layoutSpec building block examples that can be used in your app.";
+    [mutableLayoutExamplesData addObject:parentNode];
 
 // Setup Data
 // ---------------------------------------------------------------------------------------------------------
@@ -447,6 +458,8 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
     [mutableData addObject:@{@"title" : @"Node Containers", @"data" : mutableNodesContainerData}];
     [mutableData addObject:@{@"title" : @"Nodes", @"data" : mutableNodesData}];
     [mutableData addObject:@{@"title" : @"Layout Specs", @"data" : [mutableLayoutSpecData copy]}];
+    [mutableData addObject:@{@"title" : @"Layout Examples", @"data" : [mutableLayoutExamplesData copy]}];
+
     self.data  = mutableData;
 }
 
@@ -542,9 +555,14 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    ASDisplayNode *node = self.data[indexPath.section][@"data"][indexPath.row];
-    OverviewDetailViewController *detail = [[OverviewDetailViewController alloc] initWithNode:node];
-    [self.navigationController pushViewController:detail animated:YES];
+    if (indexPath.section == 3) {
+        LayoutExamplesViewController *exampleVC = [[LayoutExamplesViewController alloc] init];
+        [self.navigationController pushViewController:exampleVC animated:YES];
+    } else {
+        ASDisplayNode *node = self.data[indexPath.section][@"data"][indexPath.row];
+        OverviewDetailViewController *detail = [[OverviewDetailViewController alloc] initWithNode:node];
+        [self.navigationController pushViewController:detail animated:YES];
+    }
 }
 
 @end
