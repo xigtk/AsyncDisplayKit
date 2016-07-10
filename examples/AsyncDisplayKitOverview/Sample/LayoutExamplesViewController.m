@@ -60,7 +60,7 @@
         cellNode.backgroundColor = [UIColor lightGrayColor];
       
         ASTextNode *textNodeOne = [[ASTextNode alloc] init];
-        textNodeOne.attributedText = [[NSAttributedString alloc] initWithString:@"firstname lastname"];
+        textNodeOne.attributedText = [[NSAttributedString alloc] initWithString:@"first"];
 
       
         ASTextNode *textNodeTwo = [[ASTextNode alloc] init];
@@ -75,14 +75,13 @@
         ASLayoutSpecBlock layoutSpecBlock = nil;
       
         // Picture with text overlay
-        if (indexPath.row == 0) {
+        if (indexPath.row == 1) {
             [cellNode addSubnode:textNodeOne];
             [cellNode addSubnode:textNodeTwo];
             [cellNode addSubnode:textNodeThree];
             [cellNode addSubnode:imageNode];
           
             imageNode.preferredFrameSize = CGSizeMake(50, 50);
-            imageNode.cornerRadius = 25;
         
              layoutSpecBlock = ^ASLayoutSpec *(ASDisplayNode * _Nonnull node, ASSizeRange constrainedSize) {
                 ASStackLayoutSpec *verticalStack = [ASStackLayoutSpec verticalStackLayoutSpec];
@@ -99,9 +98,19 @@
                
                 return insetSpec;
             };
-        } else if (indexPath.row == 1) {
-        
-        
+        } else if (indexPath.row == 0) {
+          [cellNode addSubnode:textNodeOne];
+          [cellNode addSubnode:imageNode];
+          
+          layoutSpecBlock = ^ASLayoutSpec *(ASDisplayNode * _Nonnull node, ASSizeRange constrainedSize) {
+
+            imageNode.preferredFrameSize = CGSizeMake(50, 50);
+            ASInsetLayoutSpec *textInset = [ASInsetLayoutSpec insetLayoutSpecWithInsets:UIEdgeInsetsMake(6, 6, 6, 6)
+                                                                                  child:textNodeOne];
+            
+            ASOverlayLayoutSpec *textOverlay = [ASOverlayLayoutSpec overlayLayoutSpecWithChild:imageNode overlay:textNodeOne];
+            return textOverlay;
+          };
         }
       
         cellNode.layoutSpecBlock = layoutSpecBlock;

@@ -18,7 +18,7 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import <AsyncDisplayKit/ASViewController.h>
 
 @protocol ASLayoutSpecListEntry <NSObject>
 
@@ -27,7 +27,7 @@
 
 @end
 
-@interface OverviewComponentsViewController : UIViewController
+@interface OverviewComponentsViewController : ASViewController
 
 
 @end

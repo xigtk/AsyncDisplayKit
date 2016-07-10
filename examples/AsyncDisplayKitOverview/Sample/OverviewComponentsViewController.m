@@ -103,14 +103,25 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
 
 #pragma mark - UIViewController
 
+- (instancetype)init
+{
+  ASTableNode *tableNode = [ASTableNode new];
+  
+  if (self = [super initWithNode:tableNode]) {
+    self.tableNode = tableNode;
+    tableNode.delegate =  (id<ASTableDelegate>)self;
+    tableNode.dataSource = (id<ASTableDataSource>)self;
+  }
+  return self;
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 
     self.title = @"AsyncDisplayKit";
-    
+  
     [self setupData];
-    [self setupTableNode];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -127,7 +138,6 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
 {
     OverviewDisplayNodeWithSizeBlock *parentNode = nil;
     ASDisplayNode *childNode = nil;
-
     
 // Setup Nodes Container
 // ---------------------------------------------------------------------------------------------------------
@@ -461,16 +471,6 @@ typedef ASLayoutSpec *(^OverviewDisplayNodeSizeThatFitsBlock)(ASSizeRange constr
     [mutableData addObject:@{@"title" : @"Layout Examples", @"data" : [mutableLayoutExamplesData copy]}];
 
     self.data  = mutableData;
-}
-
-- (void)setupTableNode
-{
-    _tableNode = [ASTableNode new];
-    _tableNode.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _tableNode.frame = self.view.bounds;
-    _tableNode.delegate =  (id<ASTableDelegate>)self;
-    _tableNode.dataSource = (id<ASTableDataSource>)self;
-    [self.view addSubnode:_tableNode];
 }
 
 #pragma mark - Parent / Child Helper

@@ -43,6 +43,12 @@
   return [self initWithNode:[[ASDisplayNode alloc] init]];
 }
 
+- (instancetype)init
+{
+  ASDisplayNodeAssert(NO, @"ASViewController requires using -initWithNode:");
+  return [self initWithNode:[[ASDisplayNode alloc] init]];
+}
+
 - (instancetype)initWithNode:(ASDisplayNode *)node
 {
   if (!(self = [super initWithNibName:nil bundle:nil])) {

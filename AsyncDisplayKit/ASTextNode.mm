@@ -346,6 +346,7 @@ static NSArray *DefaultLinkAttributeNames = @[ NSLinkAttributeName ];
   // just update the size of the NSTextContainer that is owned by the renderer's internal context object.
   [self _renderer].constrainedSize = _constrainedSize;
 
+  // TODO: Consider if this should be gated to occur only if _constrainedSize actually changes.
   [self setNeedsDisplay];
   
   CGSize size = [self _renderer].size;
