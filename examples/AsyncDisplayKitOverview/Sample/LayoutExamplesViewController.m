@@ -89,7 +89,6 @@
                 verticalStack.children = @[textNodeOne, textNodeTwo];
                
                 ASLayoutSpec *spacer = [[ASLayoutSpec alloc] init];
-                spacer.f
                 spacer.flexGrow = YES;
                
                 ASStackLayoutSpec *horizontalStack = [ASStackLayoutSpec horizontalStackLayoutSpec];
