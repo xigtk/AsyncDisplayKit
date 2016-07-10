@@ -250,9 +250,9 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
   dispatch_once(&onceToken, ^{
     renderQueue = [[ASRunLoopQueue<ASDisplayNode *> alloc] initWithRunLoop:CFRunLoopGetMain()
                                                                 andHandler:^(ASDisplayNode * _Nonnull dequeuedItem, BOOL isQueueDrained) {
+      CFAbsoluteTime timestamp = isQueueDrained ?  CFAbsoluteTimeGetCurrent() : 0;
       [dequeuedItem _recursivelyTriggerDisplayAndBlock:NO];
       if (isQueueDrained) {
-        CFAbsoluteTime timestamp = CFAbsoluteTimeGetCurrent();
         [[NSNotificationCenter defaultCenter] postNotificationName:ASRenderingEngineDidDisplayScheduledNodesNotification
                                                             object:nil
                                                           userInfo:@{ASRenderingEngineDidDisplayNodesScheduledBeforeTimestamp: @(timestamp)}];
@@ -2330,25 +2330,25 @@ void recursivelyTriggerDisplayForLayer(CALayer *layer, BOOL shouldBlock)
   });
 }
 
-- (void)recursivelySetInterfaceState:(ASInterfaceState)newInterfaceState
+- (void)recursivelySetInterfaceState:(ASInterfaceState)interfaceState
 {
-  // Instead of each node in the recursion assuming it needs to schedule itself for display,
-  // setInterfaceState: skips this when handling range-managed nodes (our whole subtree has this set).
-  // If our range manager intends for us to be displayed right now, and didn't before, get started!
-  BOOL shouldScheduleDisplay = [self supportsRangeManagedInterfaceState] && [self shouldScheduleDisplayWithNewInterfaceState:newInterfaceState];
+  ASInterfaceState oldState = self.interfaceState;
+  ASInterfaceState newState = interfaceState;
   ASDisplayNodePerformBlockOnEveryNode(nil, self, ^(ASDisplayNode *node) {
-    node.interfaceState = newInterfaceState;
+    node.interfaceState = interfaceState;
   });
-  if (shouldScheduleDisplay) {
-    [ASDisplayNode scheduleNodeForRecursiveDisplay:self];
+  
+  if ([self supportsRangeManagedInterfaceState]) {
+    // Instead of each node in the recursion assuming it needs to schedule itself for display,
+    // setInterfaceState: skips this when handling range-managed nodes (our whole subtree has this set).
+    // If our range manager intends for us to be displayed right now, and didn't before, get started!
+    
+    BOOL nowDisplay = ASInterfaceStateIncludesDisplay(newState);
+    BOOL wasDisplay = ASInterfaceStateIncludesDisplay(oldState);
+    if (nowDisplay && (nowDisplay != wasDisplay)) {
+      [ASDisplayNode scheduleNodeForRecursiveDisplay:self];
+    }
   }
-}
-
-- (BOOL)shouldScheduleDisplayWithNewInterfaceState:(ASInterfaceState)newInterfaceState
-{
-  BOOL willDisplay = ASInterfaceStateIncludesDisplay(newInterfaceState);
-  BOOL nowDisplay = ASInterfaceStateIncludesDisplay(self.interfaceState);
-  return willDisplay && (willDisplay != nowDisplay);
 }
 
 - (ASHierarchyState)hierarchyState
