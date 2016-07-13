@@ -1,23 +1,29 @@
 //
-//  ASTableViewThrashTests.m
+//  ASCollectionViewThrashTests.m
 //  AsyncDisplayKit
 //
 //  Created by Adlai Holler on 6/21/16.
 //  Copyright © 2016 Facebook. All rights reserved.
 //
 
-@import XCTest;
+#import <XCTest/XCTest.h>
+#import <Foundation/Foundation.h>
 #import <AsyncDisplayKit/AsyncDisplayKit.h>
 #import "ASTableViewInternal.h"
+#import "ASCollectionViewInternal.h"
+#import "ASAssert.h"
 
-// Set to 1 to use UITableView and see if the issue still exists.
+// Set to 1 to use UITableView/UICollectionView and see if the issue still exists.
 #define USE_UIKIT_REFERENCE 0
 
 #if USE_UIKIT_REFERENCE
 #define TableView UITableView
+#define CollectionView UICollectionView
 #define kCellReuseID @"ASThrashTestCellReuseID"
+#define kHeaderReuseID @"ASThrashTestHeaderReuseID"
 #else
 #define TableView ASTableView
+#define CollectionView ASCollectionView
 #endif
 
 #define kInitialSectionCount 10
@@ -81,7 +87,7 @@ static volatile int32_t ASThrashTestItemNextID = 1;
 }
 
 - (CGFloat)rowHeight {
-  return (self.itemID % 400) ?: 44;
+  return (self.itemID % 200) ?: 44;
 }
 
 - (NSString *)description {
@@ -146,7 +152,7 @@ static volatile int32_t ASThrashTestSectionNextID = 1;
 }
 
 - (NSString *)description {
-  return [NSString stringWithFormat:@"<Section %lu: itemCount=%lu, items=%@>", (unsigned long)_sectionID, (unsigned long)self.items.count, ASThrashArrayDescription(self.items)];
+  return [NSString stringWithFormat:@"<Section %zu: itemCount=%zu, items=%@>", _sectionID, self.items.count, ASThrashArrayDescription(self.items)];
 }
 
 - (id)copyWithZone:(NSZone *)zone {
@@ -167,27 +173,27 @@ static volatile int32_t ASThrashTestSectionNextID = 1;
 @end
 
 #if !USE_UIKIT_REFERENCE
-@interface ASThrashTestNode: ASCellNode
+@interface ASThrashTestItemNode: ASCellNode
 @property (nonatomic, strong) ASThrashTestItem *item;
 @end
 
-@implementation ASThrashTestNode
+@implementation ASThrashTestItemNode
+
+@end
+
+@interface ASThrashTestSectionNode: ASCellNode
+@property (nonatomic, strong) ASThrashTestSection *section;
+@end
+
+@implementation ASThrashTestSectionNode
 
 @end
 #endif
 
 @interface ASThrashDataSource: NSObject
-#if USE_UIKIT_REFERENCE
-<UITableViewDataSource, UITableViewDelegate>
-#else
-<ASTableDataSource, ASTableDelegate>
-#endif
-
 @property (nonatomic, strong, readonly) UIWindow *window;
-@property (nonatomic, strong, readonly) TableView *tableView;
 @property (nonatomic, strong) NSArray <ASThrashTestSection *> *data;
 @end
-
 
 @implementation ASThrashDataSource
 
@@ -196,8 +202,113 @@ static volatile int32_t ASThrashTestSectionNextID = 1;
   if (self != nil) {
     _data = [[NSArray alloc] initWithArray:data copyItems:YES];
     _window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    _tableView = [[TableView alloc] initWithFrame:_window.bounds style:UITableViewStylePlain];
-    [_window addSubview:_tableView];
+    ASDisplayNodeAssert(NO == [self isMemberOfClass:[ASThrashDataSource class]], @"ASThrashDataSource is an abstract class. Don't instantiate it!");
+  }
+  return self;
+}
+
+
+@end
+@interface ASThrashTableDataSource: ASThrashDataSource
+#if USE_UIKIT_REFERENCE
+<UITableViewDataSource, UITableViewDelegate>
+#else
+<ASTableDataSource, ASTableDelegate>
+#endif
+
+@property (nullable, nonatomic, strong, readonly) TableView *tableView;
+
+@end
+
+@interface ASThrashCollectionDataSource: ASThrashDataSource
+#if USE_UIKIT_REFERENCE
+<UICollectionViewDataSource, UICollectionViewDelegateFlowLayout>
+#else
+<ASCollectionDataSource, ASCollectionDelegate>
+#endif
+
+@property (nullable, nonatomic, strong, readonly) CollectionView *collectionView;
+
+@end
+
+@implementation ASThrashCollectionDataSource
+- (instancetype)initWithData:(NSArray <ASThrashTestSection *> *)data {
+  self = [super initWithData:data];
+  if (self != nil) {
+    
+    UICollectionViewLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+    _collectionView = [[CollectionView alloc] initWithFrame:self.window.bounds collectionViewLayout:layout];
+    [self.window addSubview:_collectionView];
+#if USE_UIKIT_REFERENCE
+    _collectionView.dataSource = self;
+    _collectionView.delegate = self;
+    [_collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:kCellReuseID];
+    [_collectionView registerClass:[UICollectionReusableView class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:kHeaderReuseID];
+#else
+    [_collectionView registerSupplementaryNodeOfKind:UICollectionElementKindSectionHeader];
+    _collectionView.asyncDelegate = self;
+    _collectionView.asyncDataSource = self;
+    [_collectionView reloadDataImmediately];
+#endif
+    [_collectionView layoutIfNeeded];
+  }
+  return self;
+}
+
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+  return self.data[section].items.count;
+}
+
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
+  return self.data.count;
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout referenceSizeForHeaderInSection:(NSInteger)section {
+  return CGSizeMake(0, self.data[section].headerHeight);
+}
+
+#if USE_UIKIT_REFERENCE
+
+#pragma mark - UICollectionViewDataSource
+
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+  return [collectionView dequeueReusableCellWithReuseIdentifier:kCellReuseID forIndexPath:indexPath];
+}
+
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath {
+  return [collectionView dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:kHeaderReuseID forIndexPath:indexPath];
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
+  ASThrashTestItem *item = self.data[indexPath.section].items[indexPath.item];
+  return CGSizeMake(item.rowHeight, item.rowHeight);
+}
+
+#else
+
+- (ASCellNodeBlock)collectionView:(ASCollectionView *)collectionView nodeBlockForItemAtIndexPath:(NSIndexPath *)indexPath {
+  ASThrashTestItem *item = self.data[indexPath.section].items[indexPath.item];
+  return ^{
+    ASThrashTestItemNode *node = [[ASThrashTestItemNode alloc] init];
+    node.item = item;
+    return node;
+  };
+}
+
+- (ASCellNode *)collectionView:(ASCollectionView *)collectionView nodeForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath {
+  return [[ASCellNode alloc] init];
+}
+
+#endif
+@end
+
+@implementation ASThrashTableDataSource
+
+- (instancetype)initWithData:(NSArray <ASThrashTestSection *> *)data {
+  self = [super initWithData:data];
+  if (self != nil) {
+    _tableView = [[TableView alloc] initWithFrame:self.window.bounds style:UITableViewStylePlain];
+    [self.window addSubview:_tableView];
 #if USE_UIKIT_REFERENCE
     _tableView.dataSource = self;
     _tableView.delegate = self;
@@ -215,7 +326,6 @@ static volatile int32_t ASThrashTestSectionNextID = 1;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
   return self.data[section].items.count;
 }
-
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
   return self.data.count;
@@ -241,7 +351,7 @@ static volatile int32_t ASThrashTestSectionNextID = 1;
 - (ASCellNodeBlock)tableView:(ASTableView *)tableView nodeBlockForRowAtIndexPath:(NSIndexPath *)indexPath {
   ASThrashTestItem *item = self.data[indexPath.section].items[indexPath.item];
   return ^{
-    ASThrashTestNode *node = [[ASThrashTestNode alloc] init];
+    ASThrashTestItemNode *node = [[ASThrashTestItemNode alloc] init];
     node.item = item;
     return node;
   };
@@ -440,10 +550,10 @@ static NSInteger ASThrashUpdateCurrentSerializationVersion = 1;
 
 @end
 
-@interface ASTableViewThrashTests: XCTestCase
+@interface ASCollectionViewThrashTests: XCTestCase
 @end
 
-@implementation ASTableViewThrashTests {
+@implementation ASCollectionViewThrashTests {
   // The current update, which will be logged in case of a failure.
   ASThrashUpdate *_update;
   BOOL _failed;
@@ -467,13 +577,18 @@ static NSInteger ASThrashUpdateCurrentSerializationVersion = 1;
 
 #pragma mark Test Methods
 
-- (void)testInitialDataRead {
-  ASThrashDataSource *ds = [[ASThrashDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
-  [self verifyDataSource:ds];
+- (void)testTableInitialDataRead {
+  ASThrashTableDataSource *ds = [[ASThrashTableDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
+  [self verifyTableDataSource:ds];
 }
 
-/// Replays the Base64 representation of an ASThrashUpdate from "ASThrashTestRecordedCase" file
-- (void)DISABLED_testRecordedThrashCase {
+- (void)testCollectionInitialDataRead {
+  ASThrashCollectionDataSource *ds = [[ASThrashCollectionDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
+  [self verifyCollectionDataSource:ds];
+}
+
+/// Replays the Base64 representation of an ASThrashUpdate from "ASThrashTestRecordedCase" file on a table view
+- (void)DISABLED_testTableRecordedThrashCase {
   NSURL *caseURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"ASThrashTestRecordedCase" withExtension:nil subdirectory:@"TestResources"];
   NSString *base64 = [NSString stringWithContentsOfURL:caseURL encoding:NSUTF8StringEncoding error:NULL];
   
@@ -482,27 +597,59 @@ static NSInteger ASThrashUpdateCurrentSerializationVersion = 1;
     return;
   }
   
-  ASThrashDataSource *ds = [[ASThrashDataSource alloc] initWithData:_update.oldData];
+  ASThrashTableDataSource *ds = [[ASThrashTableDataSource alloc] initWithData:_update.oldData];
+#if !USE_UIKIT_REFERENCE
   ds.tableView.test_enableSuperUpdateCallLogging = YES;
-  [self applyUpdate:_update toDataSource:ds];
-  [self verifyDataSource:ds];
+#endif
+  [self applyUpdate:_update toTableDataSource:ds];
+  [self verifyTableDataSource:ds];
 }
 
-- (void)testThrashingWildly {
+/// Replays the Base64 representation of an ASThrashUpdate from "ASThrashTestRecordedCase" file on a table view
+- (void)DISABLED_testCollectionRecordedThrashCase {
+  NSURL *caseURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"ASThrashTestRecordedCase" withExtension:nil subdirectory:@"TestResources"];
+  NSString *base64 = [NSString stringWithContentsOfURL:caseURL encoding:NSUTF8StringEncoding error:NULL];
+  
+  _update = [ASThrashUpdate thrashUpdateWithBase64String:base64];
+  if (_update == nil) {
+    return;
+  }
+  
+  ASThrashCollectionDataSource *ds = [[ASThrashCollectionDataSource alloc] initWithData:_update.oldData];
+#if !USE_UIKIT_REFERENCE
+  ds.collectionView.test_enableSuperUpdateCallLogging = YES;
+#endif
+  [self applyUpdate:_update toCollectionDataSource:ds];
+  [self verifyCollectionDataSource:ds];
+}
+
+- (void)testTableThrashingWildly {
   for (NSInteger i = 0; i < kThrashingIterationCount; i++) {
     [self setUp];
-    ASThrashDataSource *ds = [[ASThrashDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
+    ASThrashTableDataSource *ds = [[ASThrashTableDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
     _update = [[ASThrashUpdate alloc] initWithData:ds.data];
     
-    [self applyUpdate:_update toDataSource:ds];
-    [self verifyDataSource:ds];
+    [self applyUpdate:_update toTableDataSource:ds];
+    [self verifyTableDataSource:ds];
+    [self tearDown];
+  }
+}
+
+- (void)testCollectionThrashingWildly {
+  for (NSInteger i = 0; i < kThrashingIterationCount; i++) {
+    [self setUp];
+    ASThrashCollectionDataSource *ds = [[ASThrashCollectionDataSource alloc] initWithData:[ASThrashTestSection sectionsWithCount:kInitialSectionCount]];
+    _update = [[ASThrashUpdate alloc] initWithData:ds.data];
+    
+    [self applyUpdate:_update toCollectionDataSource:ds];
+    [self verifyCollectionDataSource:ds];
     [self tearDown];
   }
 }
 
 #pragma mark Helpers
 
-- (void)applyUpdate:(ASThrashUpdate *)update toDataSource:(ASThrashDataSource *)dataSource {
+- (void)applyUpdate:(ASThrashUpdate *)update toTableDataSource:(ASThrashTableDataSource *)dataSource {
   TableView *tableView = dataSource.tableView;
   
   [tableView beginUpdates];
@@ -539,7 +686,7 @@ static NSInteger ASThrashUpdateCurrentSerializationVersion = 1;
   }
 }
 
-- (void)verifyDataSource:(ASThrashDataSource *)ds {
+- (void)verifyTableDataSource:(ASThrashTableDataSource *)ds {
   TableView *tableView = ds.tableView;
   NSArray <ASThrashTestSection *> *data = [ds data];
   XCTAssertEqual(data.count, tableView.numberOfSections);
@@ -553,7 +700,73 @@ static NSInteger ASThrashUpdateCurrentSerializationVersion = 1;
 #if USE_UIKIT_REFERENCE
       XCTAssertEqual([tableView rectForRowAtIndexPath:indexPath].size.height, item.rowHeight);
 #else
-      ASThrashTestNode *node = (ASThrashTestNode *)[tableView nodeForRowAtIndexPath:indexPath];
+      ASThrashTestItemNode *node = (ASThrashTestItemNode *)[tableView nodeForRowAtIndexPath:indexPath];
+      XCTAssertEqualObjects(node.item, item, @"Wrong node at index path %@", indexPath);
+#endif
+    }
+  }
+}
+
+- (void)applyUpdate:(ASThrashUpdate *)update toCollectionDataSource:(ASThrashCollectionDataSource *)dataSource {
+  CollectionView *collectionView = dataSource.collectionView;
+  
+  @try {
+    [collectionView reloadData];
+    [collectionView layoutIfNeeded];
+    [collectionView performBatchUpdates:^{
+      dataSource.data = update.data;
+      [collectionView insertSections:update.insertedSectionIndexes];
+      
+      [collectionView deleteSections:update.deletedSectionIndexes];
+      
+      [collectionView reloadSections:update.replacedSectionIndexes];
+      
+      [update.insertedItemIndexes enumerateObjectsUsingBlock:^(NSMutableIndexSet * _Nonnull indexes, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSArray *indexPaths = [indexes indexPathsInSection:idx];
+        [collectionView insertItemsAtIndexPaths:indexPaths];
+      }];
+      
+      [update.deletedItemIndexes enumerateObjectsUsingBlock:^(NSMutableIndexSet * _Nonnull indexes, NSUInteger sec, BOOL * _Nonnull stop) {
+        NSArray *indexPaths = [indexes indexPathsInSection:sec];
+        [collectionView deleteItemsAtIndexPaths:indexPaths];
+      }];
+      
+      [update.replacedItemIndexes enumerateObjectsUsingBlock:^(NSMutableIndexSet * _Nonnull indexes, NSUInteger sec, BOOL * _Nonnull stop) {
+        NSArray *indexPaths = [indexes indexPathsInSection:sec];
+        [collectionView reloadItemsAtIndexPaths:indexPaths];
+      }];
+    } completion:^(BOOL finished) {
+      
+    }];
+  
+
+#if !USE_UIKIT_REFERENCE
+    [collectionView waitUntilAllUpdatesAreCommitted];
+#endif
+  } @catch (NSException *exception) {
+    _failed = YES;
+    @throw exception;
+  }
+}
+
+- (void)verifyCollectionDataSource:(ASThrashCollectionDataSource *)ds {
+  CollectionView *collectionView = ds.collectionView;
+  NSArray <ASThrashTestSection *> *data = [ds data];
+  XCTAssertEqual(data.count, collectionView.numberOfSections);
+  for (NSInteger i = 0; i < collectionView.numberOfSections; i++) {
+    XCTAssertEqual([collectionView numberOfItemsInSection:i], data[i].items.count);
+    UICollectionViewLayoutAttributes *attr = [collectionView layoutAttributesForSupplementaryElementOfKind:UICollectionElementKindSectionHeader atIndexPath:[NSIndexPath indexPathWithIndex:i]];
+    
+    XCTAssertEqual(attr.size.height, data[i].headerHeight);
+    
+    for (NSInteger j = 0; j < [collectionView numberOfItemsInSection:i]; j++) {
+      NSIndexPath *indexPath = [NSIndexPath indexPathForItem:j inSection:i];
+      ASThrashTestItem *item = data[i].items[j];
+#if USE_UIKIT_REFERENCE
+      UICollectionViewLayoutAttributes *attr = [collectionView layoutAttributesForItemAtIndexPath:indexPath];
+      XCTAssertEqual(attr.size.height, item.rowHeight);
+#else
+      ASThrashTestItemNode *node = (ASThrashTestItemNode *)[collectionView nodeForItemAtIndexPath:indexPath];
       XCTAssertEqualObjects(node.item, item, @"Wrong node at index path %@", indexPath);
 #endif
     }

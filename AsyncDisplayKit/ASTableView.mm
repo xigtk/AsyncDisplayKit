@@ -978,7 +978,7 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
 
   BOOL preventAnimation = animationOptions == UITableViewRowAnimationNone;
   ASPerformBlockWithoutAnimation(preventAnimation, ^{
-    if (self.test_enableSuperUpdateCallLogging) {
+    if (_test_enableSuperUpdateCallLogging) {
       NSLog(@"-[super insertRowsAtIndexPaths]: %@", indexPaths);
     }
     [super insertRowsAtIndexPaths:indexPaths withRowAnimation:(UITableViewRowAnimation)animationOptions];
@@ -1004,7 +1004,7 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
 
   BOOL preventAnimation = animationOptions == UITableViewRowAnimationNone;
   ASPerformBlockWithoutAnimation(preventAnimation, ^{
-    if (self.test_enableSuperUpdateCallLogging) {
+    if (_test_enableSuperUpdateCallLogging) {
       NSLog(@"-[super deleteRowsAtIndexPaths]: %@", indexPaths);
     }
     [super deleteRowsAtIndexPaths:indexPaths withRowAnimation:(UITableViewRowAnimation)animationOptions];
@@ -1031,7 +1031,7 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
 
   BOOL preventAnimation = animationOptions == UITableViewRowAnimationNone;
   ASPerformBlockWithoutAnimation(preventAnimation, ^{
-    if (self.test_enableSuperUpdateCallLogging) {
+    if (_test_enableSuperUpdateCallLogging) {
       NSLog(@"-[super insertSections]: %@", indexSet);
     }
     [super insertSections:indexSet withRowAnimation:(UITableViewRowAnimation)animationOptions];
@@ -1053,7 +1053,7 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
 
   BOOL preventAnimation = animationOptions == UITableViewRowAnimationNone;
   ASPerformBlockWithoutAnimation(preventAnimation, ^{
-    if (self.test_enableSuperUpdateCallLogging) {
+    if (_test_enableSuperUpdateCallLogging) {
       NSLog(@"-[super deleteSections]: %@", indexSet);
     }
     [super deleteSections:indexSet withRowAnimation:(UITableViewRowAnimation)animationOptions];

@@ -168,6 +168,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 // Always set, whether ASCollectionView is created directly or via ASCollectionNode.
 @property (nonatomic, weak)   ASCollectionNode *collectionNode;
 
+@property (nonatomic) BOOL test_enableSuperUpdateCallLogging;
 @end
 
 @interface ASCollectionNode ()
@@ -1117,12 +1118,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   }
   
   [_layoutFacilitator collectionViewWillEditCellsAtIndexPaths:indexPaths batched:_performingBatchUpdates];
+  BOOL log = _test_enableSuperUpdateCallLogging;
   if (_performingBatchUpdates) {
     [_batchUpdateBlocks addObject:^{
+      if (log) {
+        NSLog(@"-[super insertItemsAtIndexPaths]: %@", indexPaths);
+      }
       [super insertItemsAtIndexPaths:indexPaths];
     }];
   } else {
     [UIView performWithoutAnimation:^{
+      if (log) {
+        NSLog(@"-[super insertItemsAtIndexPaths]: %@", indexPaths);
+      }
       [super insertItemsAtIndexPaths:indexPaths];
       // Flush any range changes that happened as part of submitting the update.
       [_rangeController updateIfNeeded];
@@ -1139,12 +1147,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   }
   
   [_layoutFacilitator collectionViewWillEditCellsAtIndexPaths:indexPaths batched:_performingBatchUpdates];
+  BOOL log = _test_enableSuperUpdateCallLogging;
   if (_performingBatchUpdates) {
     [_batchUpdateBlocks addObject:^{
+      if (log) {
+        NSLog(@"-[super deleteItemsAtIndexPaths]: %@", indexPaths);
+      }
       [super deleteItemsAtIndexPaths:indexPaths];
     }];
   } else {
     [UIView performWithoutAnimation:^{
+      if (log) {
+        NSLog(@"-[super deleteItemsAtIndexPaths]: %@", indexPaths);
+      }
       [super deleteItemsAtIndexPaths:indexPaths];
       // Flush any range changes that happened as part of submitting the update.
       [_rangeController updateIfNeeded];
@@ -1161,12 +1176,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   }
   
   [_layoutFacilitator collectionViewWillEditSectionsAtIndexSet:indexSet batched:_performingBatchUpdates];
+  BOOL log = _test_enableSuperUpdateCallLogging;
   if (_performingBatchUpdates) {
     [_batchUpdateBlocks addObject:^{
+      if (log) {
+        NSLog(@"-[super insertSections]: %@", indexSet);
+      }
       [super insertSections:indexSet];
     }];
   } else {
     [UIView performWithoutAnimation:^{
+      if (log) {
+        NSLog(@"-[super insertSections]: %@", indexSet);
+      }
       [super insertSections:indexSet];
       // Flush any range changes that happened as part of submitting the update.
       [_rangeController updateIfNeeded];
@@ -1183,12 +1205,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   }
   
   [_layoutFacilitator collectionViewWillEditSectionsAtIndexSet:indexSet batched:_performingBatchUpdates];
+  BOOL log = _test_enableSuperUpdateCallLogging;
   if (_performingBatchUpdates) {
     [_batchUpdateBlocks addObject:^{
+      if (log) {
+        NSLog(@"-[super deleteSections]: %@", indexSet);
+      }
       [super deleteSections:indexSet];
     }];
   } else {
     [UIView performWithoutAnimation:^{
+      if (log) {
+        NSLog(@"-[super deleteSections]: %@", indexSet);
+      }
       [super deleteSections:indexSet];
       // Flush any range changes that happened as part of submitting the update.
       [_rangeController updateIfNeeded];

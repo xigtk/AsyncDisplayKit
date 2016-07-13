@@ -34,6 +34,7 @@
 
 @property (nonatomic, assign) NSInteger numberOfSections;
 @property (nonatomic, assign) NSInteger numberOfItemsInSection;
+@property (nonatomic, assign) NSInteger emptySectionIndex;
 
 @end
 
@@ -43,6 +44,7 @@
   if (self = [super init]) {
     _numberOfSections = numberOfSections;
     _numberOfItemsInSection = numberOfItemsInSection;
+    _emptySectionIndex = NSNotFound;
   }
 
   return self;
@@ -69,7 +71,11 @@
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-  return self.numberOfItemsInSection;
+  if (section == _emptySectionIndex) {
+    return 0;
+  } else {
+    return self.numberOfItemsInSection;
+  }
 }
 
 @end
@@ -238,6 +244,19 @@
   
   XCTAssertTrue(ASRangeTuningParametersEqualToRangeTuningParameters(renderParams, [collectionView tuningParametersForRangeType:ASLayoutRangeTypeDisplay]));
   XCTAssertTrue(ASRangeTuningParametersEqualToRangeTuningParameters(preloadParams, [collectionView tuningParametersForRangeType:ASLayoutRangeTypeFetchData]));
+}
+
+- (void)testInsertingEmptySection
+{
+  ASCollectionViewTestController *testController = [[ASCollectionViewTestController alloc] initWithNibName:nil bundle:nil];
+  UIWindow *window = [[UIWindow alloc] init];
+  window.rootViewController = testController;
+  testController.asyncDelegate.emptySectionIndex = 2;
+  testController.asyncDelegate.numberOfSections += 1;
+  [testController.collectionView layoutIfNeeded];
+  [testController.collectionView insertSections:[NSIndexSet indexSetWithIndex:2]];
+  [testController.collectionView waitUntilAllUpdatesAreCommitted];
+  
 }
 
 @end
