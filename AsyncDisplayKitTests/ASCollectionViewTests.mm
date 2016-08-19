@@ -10,7 +10,7 @@
 
 #import <XCTest/XCTest.h>
 #import "ASCollectionView.h"
-#import "ASCollectionDataController.h"
+#import "ASDataController.h"
 #import "ASCollectionViewFlowLayoutInspector.h"
 #import "ASCellNode.h"
 #import "ASCollectionNode.h"
@@ -108,7 +108,7 @@
 
 @interface ASCollectionView (InternalTesting)
 
-- (NSArray *)supplementaryNodeKindsInDataController:(ASCollectionDataController *)dataController;
+- (NSArray *)supplementaryNodeKindsInDataController:(ASDataController *)dataController;
 
 @end
 

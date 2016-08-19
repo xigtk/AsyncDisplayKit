@@ -13,7 +13,7 @@
 #import "ASBatchFetching.h"
 #import "ASDelegateProxy.h"
 #import "ASCellNode+Internal.h"
-#import "ASCollectionDataController.h"
+#import "ASChangeSetDataController.h"
 #import "ASCollectionViewLayoutController.h"
 #import "ASCollectionViewFlowLayoutInspector.h"
 #import "ASDisplayNodeExtras.h"
@@ -86,11 +86,11 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 #pragma mark -
 #pragma mark ASCollectionView.
 
-@interface ASCollectionView () <ASRangeControllerDataSource, ASRangeControllerDelegate, ASCollectionDataControllerSource, ASCellNodeInteractionDelegate, ASDelegateProxyInterceptor, ASBatchFetchingScrollView, ASDataControllerEnvironmentDelegate> {
+@interface ASCollectionView () <ASRangeControllerDataSource, ASRangeControllerDelegate, ASDataControllerSource, ASCellNodeInteractionDelegate, ASDelegateProxyInterceptor, ASBatchFetchingScrollView, ASDataControllerEnvironmentDelegate> {
   ASCollectionViewProxy *_proxyDataSource;
   ASCollectionViewProxy *_proxyDelegate;
   
-  ASCollectionDataController *_dataController;
+  ASDataController *_dataController;
   ASRangeController *_rangeController;
   ASCollectionViewLayoutController *_layoutController;
   id<ASCollectionViewLayoutInspecting> _defaultLayoutInspector;
@@ -229,7 +229,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   _rangeController.delegate = self;
   _rangeController.layoutController = _layoutController;
   
-  _dataController = [[ASCollectionDataController alloc] initWithDataSource:self];
+  _dataController = [[ASChangeSetDataController alloc] initWithDataSource:self];
   _dataController.delegate = _rangeController;
   _dataController.environmentDelegate = self;
   
@@ -1011,24 +1011,24 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
 #pragma mark - ASCollectionViewDataControllerSource Supplementary view support
 
-- (ASCellNode *)dataController:(ASCollectionDataController *)dataController supplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+- (ASCellNode *)dataController:(ASDataController *)dataController supplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
   ASCellNode *node = [_asyncDataSource collectionView:self nodeForSupplementaryElementOfKind:kind atIndexPath:indexPath];
   ASDisplayNodeAssert(node != nil, @"A node must be returned for a supplementary node");
   return node;
 }
 
-- (NSArray *)supplementaryNodeKindsInDataController:(ASCollectionDataController *)dataController
+- (NSArray *)supplementaryNodeKindsInDataController:(ASDataController *)dataController
 {
   return [_registeredSupplementaryKinds allObjects];
 }
 
-- (ASSizeRange)dataController:(ASCollectionDataController *)dataController constrainedSizeForSupplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+- (ASSizeRange)dataController:(ASDataController *)dataController constrainedSizeForSupplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
   return [self.layoutInspector collectionView:self constrainedSizeForSupplementaryNodeOfKind:kind atIndexPath:indexPath];
 }
 
-- (NSUInteger)dataController:(ASCollectionDataController *)dataController supplementaryNodesOfKind:(NSString *)kind inSection:(NSUInteger)section
+- (NSUInteger)dataController:(ASDataController *)dataController supplementaryNodesOfKind:(NSString *)kind inSection:(NSUInteger)section
 {
   return [self.layoutInspector collectionView:self supplementaryNodesOfKind:kind inSection:section];
 }

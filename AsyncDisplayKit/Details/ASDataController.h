@@ -57,6 +57,21 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
  */
 - (NSUInteger)numberOfSectionsInDataController:(ASDataController *)dataController;
 
+@optional
+
+/**
+ The constrained size range for layout.
+ */
+- (ASSizeRange)dataController:(ASDataController *)dataController constrainedSizeForSupplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath;
+
+- (NSArray *)supplementaryNodeKindsInDataController:(ASDataController *)dataController;
+
+- (NSUInteger)dataController:(ASDataController *)dataController supplementaryNodesOfKind:(NSString *)kind inSection:(NSUInteger)section;
+
+- (ASCellNode *)dataController:(ASDataController *)dataController supplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath;
+
+- (ASCellNodeBlock)dataController:(ASDataController *)dataController supplementaryNodeBlockOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath;
+
 @end
 
 @protocol ASDataControllerEnvironmentDelegate
@@ -182,6 +197,8 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
 - (nullable ASCellNode *)nodeAtIndexPath:(NSIndexPath *)indexPath;
 
 - (nullable NSIndexPath *)indexPathForNode:(ASCellNode *)cellNode;
+
+- (nullable ASCellNode *)supplementaryNodeOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath;
 
 /**
  * Direct access to the nodes that have completed calculation and layout
