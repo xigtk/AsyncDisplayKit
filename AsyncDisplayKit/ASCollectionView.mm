@@ -638,7 +638,39 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-  return [[_dataController nodeAtIndexPath:indexPath] calculatedSize];
+  ASCellNode *node = [_dataController nodeAtIndexPath:indexPath];
+  CGSize result = [node calculatedSize];
+
+  /**
+   * Limit the size to the available space in the non-scrollable direction.
+   *
+   * In complex cases, even floating-point precision errors will cause flow layout
+   * to log a warning about invalid item sizes.
+   */
+  ASScrollDirection direction = self.scrollableDirections;
+  if (direction == ASScrollDirectionHorizontalDirections) {
+    UIEdgeInsets inset = collectionView.contentInset;
+    CGFloat limit = collectionView.bounds.size.height - inset.top - inset.bottom;
+    CGFloat overshoot = result.height - limit;
+    if (overshoot > 0) {
+      if (overshoot >= 1/ASScreenScale()) {
+        NSLog(@"Cell node in horizontal collection view is too tall. Calculated height = %g, available height = %g. Node: %@", result.height, limit, node);
+      }
+      result.height = limit;
+    }
+  } else if (direction == ASScrollDirectionVerticalDirections) {
+    UIEdgeInsets inset = collectionView.contentInset;
+    CGFloat limit = collectionView.bounds.size.width - inset.top - inset.bottom;
+    CGFloat overshoot = result.width - limit;
+    if (overshoot > 0) {
+      if (overshoot >= 1/ASScreenScale()) {
+        NSLog(@"Cell node in vertical collection view is too wide. Calculated width = %g, available width = %g. Node: %@", result.width, limit, node);
+      }
+      result.width = limit;
+    }
+  }
+
+  return result;
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
