@@ -62,7 +62,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
   
   BOOL _dataSourceImplementsSupplementaryNodeBlockOfKindAtIndexPath;
   
-  NSMutableDictionary<NSString *, NSMutableArray<ASIndexedNodeContext *> *> *_pendingContexts;
+  NSMutableDictionary<NSString *, NSMutableArray<ASIndexedNodeContext *> *> *_pendingSupplementaryContexts;
 }
 
 @end
@@ -71,7 +71,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
 
 #pragma mark - Lifecycle
 
-- (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource
+- (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource supplementaryItemSupport:(BOOL)supplementaryItemSupport
 {
   if (!(self = [super init])) {
     return nil;
@@ -86,11 +86,15 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
   _completedNodes[ASDataControllerRowNodeKind] = [NSMutableArray array];
   _editingNodes[ASDataControllerRowNodeKind] = [NSMutableArray array];
   
-  _pendingContexts = [NSMutableDictionary dictionary];
+  _pendingSupplementaryContexts = [NSMutableDictionary dictionary];
+  _supplementaryItemSupport = supplementaryItemSupport;
   
   _dataSourceImplementsSupplementaryNodeBlockOfKindAtIndexPath = [dataSource respondsToSelector:@selector(dataController:supplementaryNodeBlockOfKind:atIndexPath:)];
-  
-  ASDisplayNodeAssertTrue(_dataSourceImplementsSupplementaryNodeBlockOfKindAtIndexPath || [dataSource respondsToSelector:@selector(dataController:supplementaryNodeOfKind:atIndexPath:)]);
+
+  if (supplementaryItemSupport) {
+    ASDisplayNodeAssertTrue(_dataSourceImplementsSupplementaryNodeBlockOfKindAtIndexPath || [dataSource respondsToSelector:@selector(dataController:supplementaryNodeOfKind:atIndexPath:)]);
+    
+  }
   
   _mainSerialQueue = [[ASMainSerialQueue alloc] init];
   
@@ -106,7 +110,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
 {
   ASDisplayNodeFailAssert(@"Failed to call designated initializer.");
   id<ASDataControllerSource> fakeDataSource = nil;
-  return [self initWithDataSource:fakeDataSource];
+  return [self initWithDataSource:fakeDataSource supplementaryItemSupport:NO];
 }
 
 - (void)setDelegate:(id<ASDataControllerDelegate>)delegate
@@ -413,12 +417,12 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
   NSIndexSet *sectionIndexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, sectionCount)];
   NSArray<ASIndexedNodeContext *> *contexts = [self _populateFromDataSourceWithSectionIndexSet:sectionIndexSet];
   
-  // Allow subclasses to perform setup before going into the edit transaction
+  // Populate supplementaries
   for (NSString *kind in [self supplementaryKinds]) {
     LOG(@"Populating elements of kind: %@", kind);
     NSMutableArray<ASIndexedNodeContext *> *contexts = [NSMutableArray array];
     [self _populateSupplementaryNodesOfKind:kind withMutableContexts:contexts];
-    _pendingContexts[kind] = contexts;
+    _pendingSupplementaryContexts[kind] = contexts;
   }
   
   dispatch_group_async(_editingTransactionGroup, _editingTransactionQueue, ^{
@@ -435,7 +439,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
     }
     
     // Supplementary node handling
-    [_pendingContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, __unused BOOL * _Nonnull stop) {
+    [_pendingSupplementaryContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, __unused BOOL * _Nonnull stop) {
       // Remove everything that existed before the reload, now that we're ready to insert replacements
       NSArray *indexPaths = [self indexPathsForEditingNodesOfKind:kind];
       [self deleteNodesOfKind:kind atIndexPaths:indexPaths completion:nil];
@@ -455,7 +459,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
         [self insertNodes:nodes ofKind:kind atIndexPaths:indexPaths completion:nil];
       }];
     }];
-    [_pendingContexts removeAllObjects];
+    [_pendingSupplementaryContexts removeAllObjects];
     
     // Insert empty sections
     NSMutableArray *sections = [NSMutableArray arrayWithCapacity:sectionCount];
@@ -681,12 +685,12 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
     LOG(@"Populating elements of kind: %@, for sections: %@", kind, sections);
     NSMutableArray<ASIndexedNodeContext *> *contexts = [NSMutableArray array];
     [self _populateSupplementaryNodesOfKind:kind withSections:sections mutableContexts:contexts];
-    _pendingContexts[kind] = contexts;
+    _pendingSupplementaryContexts[kind] = contexts;
   }
   
   dispatch_group_async(_editingTransactionGroup, _editingTransactionQueue, ^{
     // Supplementary node handling
-    [_pendingContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, BOOL * _Nonnull stop) {
+    [_pendingSupplementaryContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, BOOL * _Nonnull stop) {
       NSMutableArray *sectionArray = [NSMutableArray arrayWithCapacity:sections.count];
       for (NSUInteger i = 0; i < sections.count; i++) {
         [sectionArray addObject:[NSMutableArray array]];
@@ -697,7 +701,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
         [self insertNodes:nodes ofKind:kind atIndexPaths:indexPaths completion:nil];
       }];
     }];
-    [_pendingContexts removeAllObjects];
+    [_pendingSupplementaryContexts removeAllObjects];
 
     LOG(@"Edit Transaction - insertSections: %@", sections);
     NSMutableArray *sectionArray = [NSMutableArray arrayWithCapacity:sections.count];
@@ -825,18 +829,18 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
     LOG(@"Populating elements of kind: %@, for index paths: %@", kind, indexPaths);
     NSMutableArray<ASIndexedNodeContext *> *contexts = [NSMutableArray array];
     [self _populateSupplementaryNodesOfKind:kind atIndexPaths:indexPaths mutableContexts:contexts];
-    _pendingContexts[kind] = contexts;
+    _pendingSupplementaryContexts[kind] = contexts;
   }
 
   dispatch_group_async(_editingTransactionGroup, _editingTransactionQueue, ^{
     // Supplementary node handling
-    [_pendingContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, BOOL * _Nonnull stop) {
+    [_pendingSupplementaryContexts enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull kind, NSMutableArray<ASIndexedNodeContext *> * _Nonnull contexts, BOOL * _Nonnull stop) {
       [self batchLayoutNodesFromContexts:contexts batchCompletion:^(NSArray<ASCellNode *> *nodes, NSArray<NSIndexPath *> *indexPaths) {
         [self insertNodes:nodes ofKind:kind atIndexPaths:indexPaths completion:nil];
       }];
     }];
     
-    [_pendingContexts removeAllObjects];
+    [_pendingSupplementaryContexts removeAllObjects];
 
     LOG(@"Edit Transaction - insertRows: %@", indexPaths);
     [self _batchLayoutAndInsertNodesFromContexts:contexts withAnimationOptions:animationOptions];
@@ -863,7 +867,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
   for (NSString *kind in [self supplementaryKinds]) {
     NSMutableArray<ASIndexedNodeContext *> *contexts = [NSMutableArray array];
     [self _populateSupplementaryNodesOfKind:kind atIndexPaths:indexPaths mutableContexts:contexts];
-    _pendingContexts[kind] = contexts;
+    _pendingSupplementaryContexts[kind] = contexts;
   }
 
   dispatch_group_async(_editingTransactionGroup, _editingTransactionQueue, ^{
@@ -876,7 +880,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
       // If any of the contexts remain after the deletion, re-insert them, e.g.
       // UICollectionElementKindSectionHeader remains even if item 0 is deleted.
       NSMutableArray<ASIndexedNodeContext *> *reinsertedContexts = [NSMutableArray array];
-      for (ASIndexedNodeContext *context in _pendingContexts[kind]) {
+      for (ASIndexedNodeContext *context in _pendingSupplementaryContexts[kind]) {
         if ([deletedIndexPaths containsObject:context.indexPath]) {
           [reinsertedContexts addObject:context];
         }
@@ -886,7 +890,7 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
         [self insertNodes:nodes ofKind:kind atIndexPaths:indexPaths completion:nil];
       }];
     }
-    [_pendingContexts removeAllObjects];
+    [_pendingSupplementaryContexts removeAllObjects];
 
     LOG(@"Edit Transaction - deleteRows: %@", indexPaths);
     [self _deleteNodesAtIndexPaths:sortedIndexPaths withAnimationOptions:animationOptions];

@@ -229,7 +229,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   _rangeController.delegate = self;
   _rangeController.layoutController = _layoutController;
   
-  _dataController = [[ASChangeSetDataController alloc] initWithDataSource:self];
+  _dataController = [[ASChangeSetDataController alloc] initWithDataSource:self supplementaryItemSupport:YES];
   _dataController.delegate = _rangeController;
   _dataController.environmentDelegate = self;
   

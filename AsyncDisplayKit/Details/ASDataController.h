@@ -124,7 +124,7 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
 @protocol ASFlowLayoutControllerDataSource;
 @interface ASDataController : ASDealloc2MainObject <ASFlowLayoutControllerDataSource>
 
-- (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDataSource:(id<ASDataControllerSource>)dataSource supplementaryItemSupport:(BOOL)supplementaryItemSupport NS_DESIGNATED_INITIALIZER;
 
 /**
  Data source for fetching data info.
@@ -135,6 +135,11 @@ FOUNDATION_EXPORT NSString * const ASDataControllerRowNodeKind;
  Delegate to notify when data is updated.
  */
 @property (nonatomic, weak) id<ASDataControllerDelegate> delegate;
+
+/**
+ Delegate to notify when data is updated.
+ */
+@property (nonatomic, readonly) BOOL supplementaryItemSupport;
 
 /**
  *
