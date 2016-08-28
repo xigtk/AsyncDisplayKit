@@ -18,19 +18,19 @@
 {
   // All TextKit operations (even non-mutative ones) must be executed serially.
   std::shared_ptr<ASDN::Mutex> __instanceLock__;
-
+  
   NSLayoutManager *_layoutManager;
   NSTextStorage *_textStorage;
   NSTextContainer *_textContainer;
 }
 
-+ (nullable id)accessCacheWithBlock:(id _Nullable(^)(NSCache *))block
++ (nullable id)accessCacheWithBlock:(id(^)(NSMutableArray *))block
 {
   static NSLock *lock;
   static dispatch_once_t onceToken;
-  static NSCache *contextCache;
+  static NSMutableArray *contextCache;
   dispatch_once(&onceToken, ^{
-    contextCache = [[NSCache alloc] init];
+    contextCache = [[NSMutableArray alloc] init];
     lock = [[NSLock alloc] init];
   });
   [lock lock];
@@ -46,16 +46,18 @@
                                   constrainedSize:(CGSize)constrainedSize
                             layoutManagerDelegate:(id<NSLayoutManagerDelegate>)layoutManagerDelegate
 {
-  ASTextKitContext * _Nullable cached = [self accessCacheWithBlock:^(NSCache *cache) {
-    id key = attributedString ?: (id)kCFNull;
-    ASTextKitContext *cached = [cache objectForKey:key];
-    if (cached != nil) {
-      [cache removeObjectForKey:key];
+  ASTextKitContext * _Nullable cached = [self accessCacheWithBlock:^id(NSMutableArray *cache) {
+    NSInteger count = cache.count;
+    if (count == 0) {
+      return nil;
     }
-    return cached;
+    NSInteger idx = count - 1;
+    ASTextKitContext *result = cache[idx];
+    [cache removeObjectAtIndex:idx];
+    return result;
   }];
   if (cached != nil) {
-    [cached configureWithLineBreakMode:lineBreakMode maximumNumberOfLines:maximumNumberOfLines exclusionPaths:exclusionPaths constrainedSize:constrainedSize layoutManagerDelegate:layoutManagerDelegate];
+    [cached configureWithAttributedString:attributedString lineBreakMode:lineBreakMode maximumNumberOfLines:maximumNumberOfLines exclusionPaths:exclusionPaths constrainedSize:constrainedSize layoutManagerDelegate:layoutManagerDelegate];
     return cached;
   } else {
     return [[ASTextKitContext alloc] initWithAttributedString:attributedString lineBreakMode:lineBreakMode maximumNumberOfLines:maximumNumberOfLines exclusionPaths:exclusionPaths constrainedSize:constrainedSize layoutManagerDelegate:layoutManagerDelegate];
@@ -78,23 +80,27 @@
     __instanceLock__ = std::make_shared<ASDN::Mutex>();
     
     // Create the TextKit component stack with our default configuration.
-    _textStorage = (attributedString ? [[NSTextStorage alloc] initWithAttributedString:attributedString] : [[NSTextStorage alloc] init]);
+    _textStorage = [[NSTextStorage alloc] init];
     _layoutManager = [[ASLayoutManager alloc] init];
     
     [_textStorage addLayoutManager:_layoutManager];
     _textContainer = [[NSTextContainer alloc] initWithSize:constrainedSize];
     [_layoutManager addTextContainer:_textContainer];
-    [self configureWithLineBreakMode:lineBreakMode maximumNumberOfLines:maximumNumberOfLines exclusionPaths:exclusionPaths constrainedSize:constrainedSize layoutManagerDelegate:layoutManagerDelegate];
+    [self configureWithAttributedString:attributedString lineBreakMode:lineBreakMode maximumNumberOfLines:maximumNumberOfLines exclusionPaths:exclusionPaths constrainedSize:constrainedSize layoutManagerDelegate:layoutManagerDelegate];
   }
   return self;
 }
 
-- (void)configureWithLineBreakMode:(NSLineBreakMode)lineBreakMode
-              maximumNumberOfLines:(NSUInteger)maximumNumberOfLines
-                    exclusionPaths:(NSArray *)exclusionPaths
-                   constrainedSize:(CGSize)constrainedSize
-             layoutManagerDelegate:(id<NSLayoutManagerDelegate>)layoutManagerDelegate
+- (void)configureWithAttributedString:(NSAttributedString *)attributedString
+                        lineBreakMode:(NSLineBreakMode)lineBreakMode
+                 maximumNumberOfLines:(NSUInteger)maximumNumberOfLines
+                       exclusionPaths:(NSArray *)exclusionPaths
+                      constrainedSize:(CGSize)constrainedSize
+                layoutManagerDelegate:(id<NSLayoutManagerDelegate>)layoutManagerDelegate
 {
+  if ([_textStorage isEqualToAttributedString:attributedString] == NO) {
+    [_textStorage setAttributedString:attributedString];
+  }
   _layoutManager.usesFontLeading = NO;
   _layoutManager.delegate = layoutManagerDelegate;
   // We want the text laid out up to the very edges of the container.
@@ -109,9 +115,8 @@
 
 - (void)markForReuse
 {
-  id key = _textStorage.length > 0 ? [[NSAttributedString alloc] initWithAttributedString:_textStorage] : (id)kCFNull;
-  [ASTextKitContext accessCacheWithBlock:^id _Nullable(NSCache *cache) {
-    [cache setObject:self forKey:key];
+  [ASTextKitContext accessCacheWithBlock:^id(NSMutableArray *cache) {
+    [cache addObject:self];
     return nil;
   }];
 }
