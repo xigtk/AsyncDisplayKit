@@ -96,7 +96,7 @@ static NSCharacterSet *_defaultAvoidTruncationCharacterSet()
     ASTextKitAttributes attributes = _attributes;
     // We must inset the constrained size by the size of the shadower.
     CGSize shadowConstrainedSize = [[self shadower] insetSizeWithConstrainedSize:_constrainedSize];
-    _context = [[ASTextKitContext alloc] initWithAttributedString:attributes.attributedString
+    _context = [ASTextKitContext contextWithAttributedString:attributes.attributedString
                                                     lineBreakMode:attributes.lineBreakMode
                                              maximumNumberOfLines:attributes.maximumNumberOfLines
                                                    exclusionPaths:attributes.exclusionPaths
@@ -128,6 +128,7 @@ static NSCharacterSet *_defaultAvoidTruncationCharacterSet()
     // truncater do it's job again for the new constrained size. This is necessary as after a truncation did happen
     // the context would use the truncated string and not the original string to truncate based on the new
     // constrained size
+    [_context markForReuse];
     __block ASTextKitContext *ctx = _context;
     __block ASTextKitTailTruncater *tru = _truncater;
     __block ASTextKitFontSizeAdjuster *adj = _fontSizeAdjuster;

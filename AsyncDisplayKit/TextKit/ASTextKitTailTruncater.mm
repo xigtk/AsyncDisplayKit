@@ -62,7 +62,7 @@
   BOOL leftAligned = CGRectGetMinX(lastLineRect) == CGRectGetMinX(lastLineUsedRect) || !rtlWritingDirection;
 
   // Calculate the bounding rectangle for the truncation message
-  ASTextKitContext *truncationContext = [[ASTextKitContext alloc] initWithAttributedString:_truncationAttributedString
+  ASTextKitContext *truncationContext = [ASTextKitContext contextWithAttributedString:_truncationAttributedString
                                                                              lineBreakMode:NSLineBreakByWordWrapping
                                                                       maximumNumberOfLines:1
                                                                             exclusionPaths:nil
@@ -101,6 +101,7 @@
   }
   NSUInteger firstCharacterIndexToReplace = [layoutManager characterIndexForGlyphAtIndex:firstClippedGlyphIndex];
 
+  [truncationContext markForReuse];
   // Break on word boundaries
   return [self _findTruncationInsertionPointAtOrBeforeCharacterIndex:firstCharacterIndexToReplace
                                                        layoutManager:layoutManager

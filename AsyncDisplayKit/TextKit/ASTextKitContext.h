@@ -19,16 +19,16 @@
 @interface ASTextKitContext : NSObject
 
 /**
- Initializes a context and its associated TextKit components.
+ Initializes or loads a context and its associated TextKit components.
 
  Initialization of TextKit components is a globally locking operation so be careful of bottlenecks with this class.
  */
-- (instancetype)initWithAttributedString:(NSAttributedString *)attributedString
-                           lineBreakMode:(NSLineBreakMode)lineBreakMode
-                    maximumNumberOfLines:(NSUInteger)maximumNumberOfLines
-                          exclusionPaths:(NSArray *)exclusionPaths
-                         constrainedSize:(CGSize)constrainedSize
-                   layoutManagerDelegate:(id<NSLayoutManagerDelegate>)layoutManagerDelegate;
++ (ASTextKitContext *)contextWithAttributedString:(NSAttributedString *)attributedString
+                                    lineBreakMode:(NSLineBreakMode)lineBreakMode
+                             maximumNumberOfLines:(NSUInteger)maximumNumberOfLines
+                                   exclusionPaths:(NSArray *)exclusionPaths
+                                  constrainedSize:(CGSize)constrainedSize
+                            layoutManagerDelegate:(id<NSLayoutManagerDelegate>)layoutManagerDelegate;
 
 @property (nonatomic, assign, readwrite) CGSize constrainedSize;
 
@@ -44,5 +44,7 @@
 - (void)performBlockWithLockedTextKitComponents:(void (^)(NSLayoutManager *layoutManager,
                                                           NSTextStorage *textStorage,
                                                           NSTextContainer *textContainer))block;
+
+- (void)markForReuse;
 
 @end
