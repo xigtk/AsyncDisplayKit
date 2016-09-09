@@ -389,7 +389,8 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
 
 - (void)dealloc
 {
-  ASDisplayNodeAssertMainThread();
+  _flags.isDeallocating = YES;
+
   // Synchronous nodes may not be able to call the hierarchy notifications, so only enforce for regular nodes.
   ASDisplayNodeAssert(_flags.synchronous || !ASInterfaceStateIncludesVisible(_interfaceState), @"Node should always be marked invisible before deallocating; interfaceState: %lu, %@", (unsigned long)_interfaceState, self);
   
@@ -405,18 +406,105 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
   for (ASDisplayNode *subnode in _subnodes)
     [subnode __setSupernode:nil];
 
-  _view = nil;
-  _subnodes = nil;
-  if (_flags.layerBacked)
+  // Trampoline any UIKit ivars' deallocation to main
+  if (ASDisplayNodeThreadIsMain() == NO) {
+    [self _scheduleIvarsForMainDeallocation];
+  } else {
     _layer.delegate = nil;
-  _layer = nil;
+  }
+
+  _subnodes = nil;
 
   [self __setSupernode:nil];
-  _pendingViewState = nil;
+}
 
-  _displaySentinel = nil;
+- (void)_scheduleIvarsForMainDeallocation
+{
+  /**
+   * UIKit components must be deallocated on the main thread. We use this shared
+   * run loop queue to gradually deallocate them across many turns of the main run loop.
+   */
+  static ASRunLoopQueue *queue;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    queue = [[ASRunLoopQueue alloc] initWithRunLoop:CFRunLoopGetMain() andHandler:^(id _Nonnull dequeuedItem, BOOL isQueueDrained) { }];
+    queue.batchSize = 10;
+  });
 
-  _pendingDisplayNodes = nil;
+  // Start with self.class and walk up to ASDisplayNode, enqueueing UIKit objects into the queue.
+  Class c = object_getClass(self);
+  while (c != [NSObject class]) {
+    NSValue *ivarsObj = [c _ivarsThatMayNeedMainDeallocation];
+
+    // Unwrap the ivar array
+    unsigned int count = 0;
+    NSAssert(sscanf(ivarsObj.objCType, "[%u^{objc_ivar}]", &count), @"Unexpected type in NSValue: %s", ivarsObj.objCType);
+    Ivar ivars[count];
+    [ivarsObj getValue:ivars];
+
+    for (NSUInteger i = 0; i < count; i++) {
+      id value = object_getIvar(self, ivars[i]);
+      if (ASClassRequiresMainThreadDeallocation(object_getClass(value))) {
+        LOG(@"Trampoling ivar '%s' value %@ for main deallocation.", ivar_getName(ivars[i]), value);
+        [queue enqueue:value];
+      } else {
+        LOG(@"Not trampolining ivar '%s' value %@.", ivar_getName(ivars[i]), value);
+      }
+    }
+
+    c = class_getSuperclass(c);
+  }
+}
+
+/// Returns an NSValue-wrapped array of Ivars. Caches results.
++ (NSValue/*<[Ivar]>*/ * _Nonnull)_ivarsThatMayNeedMainDeallocation
+{
+  static NSCache<Class, NSValue *> *ivarsCache;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    ivarsCache = [[NSCache alloc] init];
+  });
+
+  NSValue *result = [ivarsCache objectForKey:self];
+  if (result != nil) {
+    return result;
+  }
+
+  // Cache miss. Check through our ivars.
+  unsigned int totalCount;
+  Ivar *allIvars = class_copyIvarList(self, &totalCount);
+
+  unsigned int filteredCount = 0;
+  Ivar filteredIvars[totalCount];
+  for (NSUInteger i = 0; i < totalCount; i++) {
+    Ivar ivar = allIvars[i];
+    const char *type = ivar_getTypeEncoding(ivar);
+
+    if (strcmp(type, @encode(id)) == 0) {
+      // If it's `id` we have to include it just in case.
+      filteredIvars[filteredCount] = ivar;
+      filteredCount += 1;
+      LOG(@"Marking ivar '%s' for possible main deallocation due to type id", ivar_getName(ivar));
+    } else {
+      // If it's an ivar with a static type, check the type.
+      Class c = ASGetClassFromType(type);
+      if (ASClassRequiresMainThreadDeallocation(c)) {
+        filteredIvars[filteredCount] = ivar;
+        filteredCount += 1;
+        LOG(@"Marking ivar '%s' for main deallocation due to class %@", ivar_getName(ivar), c);
+      } else {
+        LOG(@"Skipping ivar '%s' for main deallocation.", ivar_getName(ivar));
+      }
+    }
+  }
+  free(allIvars);
+
+  char arrayType[32];
+  snprintf(arrayType, 32, "[%u^{objc_ivar}]", filteredCount);
+  result = [NSValue value:filteredIvars withObjCType:arrayType];
+
+  [ivarsCache setObject:result forKey:self];
+  return result;
 }
 
 #pragma mark - Core
@@ -508,7 +596,7 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
 {
   ASDN::MutexLocker l(__instanceLock__);
 
-  if (self._isDeallocating) {
+  if (_flags.isDeallocating) {
     return;
   }
 

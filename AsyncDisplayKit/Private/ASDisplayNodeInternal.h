@@ -101,6 +101,7 @@ FOUNDATION_EXPORT NSString * const ASRenderingEngineDidDisplayNodesScheduledBefo
     unsigned isExitingHierarchy:1;
     unsigned isInHierarchy:1;
     unsigned visibilityNotificationsDisabled:VISIBILITY_NOTIFICATIONS_DISABLED_BITS;
+    unsigned isDeallocating:1;
   } _flags;
   
 @protected

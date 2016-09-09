@@ -271,10 +271,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 
 - (void)dealloc
 {
+  ASDisplayNodeAssertMainThread();
   // Sometimes the UIKit classes can call back to their delegate even during deallocation, due to animation completion blocks etc.
   _isDeallocating = YES;
   [self setAsyncDelegate:nil];
   [self setAsyncDataSource:nil];
+
+  // Data controller & range controller may own a ton of nodes, let's deallocate those off-main.
+  __block ASDataController *dataController = _dataController;
+  __block ASRangeController *rangeController = _rangeController;
+  ASPerformBlockOnDeallocationQueue(^{
+    dataController = nil;
+    rangeController = nil;
+  });
 }
 
 #pragma mark -
