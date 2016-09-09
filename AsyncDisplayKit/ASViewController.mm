@@ -19,6 +19,7 @@
 #import "ASTraitCollection.h"
 #import "ASEnvironmentInternal.h"
 #import "ASRangeControllerUpdateRangeProtocol+Beta.h"
+#import "ASInternalHelpers.h"
 
 #define AS_LOG_VISIBILITY_CHANGES 0
 
@@ -59,6 +60,14 @@
   _automaticallyAdjustRangeModeBasedOnViewEvents = _selfConformsToRangeModeProtocol || _nodeConformsToRangeModeProtocol;
 
   return self;
+}
+
+- (void)dealloc
+{
+  __block ASDisplayNode *node = _node;
+  ASPerformBlockOnDeallocationQueue(^{
+    node = nil;
+  });
 }
 
 - (void)loadView

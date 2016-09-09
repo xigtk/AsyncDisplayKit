@@ -13,7 +13,7 @@
 // These methods must never be called or overridden by other classes.
 //
 
-#import "_AS-objc-internal.h"
+
 #import "ASDisplayNode.h"
 #import "ASSentinel.h"
 #import "ASThread.h"
@@ -101,6 +101,7 @@ FOUNDATION_EXPORT NSString * const ASRenderingEngineDidDisplayNodesScheduledBefo
     unsigned isExitingHierarchy:1;
     unsigned isInHierarchy:1;
     unsigned visibilityNotificationsDisabled:VISIBILITY_NOTIFICATIONS_DISABLED_BITS;
+    unsigned isDeallocating:1;
   } _flags;
   
 @protected
