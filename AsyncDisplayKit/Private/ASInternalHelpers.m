@@ -118,14 +118,9 @@ Class _Nullable ASGetClassFromType(const char *type)
     return nil;
   }
 
-  // If it's a protocol, bail
-  if (type[2] == '<') {
-    return nil;
-  }
-
   // Copy type[2..(end-1)]. So @"UIImage" -> UIImage
   size_t resultLength = typeLength - 3;
-  char className[40];
+  char className[resultLength + 1];
   strncpy(className, type + 2, resultLength);
   className[resultLength] = '\0';
   return objc_getClass(className);
