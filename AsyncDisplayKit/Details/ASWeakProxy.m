@@ -48,7 +48,7 @@
 - (void)forwardInvocation:(NSInvocation *)invocation
 {
   id target = _target;
-  if ([target respondsToSelector:invocation.selector]) {
+  if (target != nil) {
     [invocation invokeWithTarget:target];
   }
 }
