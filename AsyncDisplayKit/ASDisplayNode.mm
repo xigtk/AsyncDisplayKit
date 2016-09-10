@@ -445,7 +445,7 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
     for (NSUInteger i = 0; i < count; i++) {
       id value = object_getIvar(self, ivars[i]);
       if (ASClassRequiresMainThreadDeallocation(object_getClass(value))) {
-        LOG(@"Trampoling ivar '%s' value %@ for main deallocation.", ivar_getName(ivars[i]), value);
+        LOG(@"Trampolining ivar '%s' value %@ for main deallocation.", ivar_getName(ivars[i]), value);
         [queue enqueue:value];
       } else {
         LOG(@"Not trampolining ivar '%s' value %@.", ivar_getName(ivars[i]), value);

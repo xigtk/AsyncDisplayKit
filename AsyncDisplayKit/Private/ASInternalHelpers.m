@@ -89,7 +89,7 @@ void ASPerformBlockOnDeallocationQueue(void (^block)())
 
 BOOL ASClassRequiresMainThreadDeallocation(Class class)
 {
-  if (class == [UIImage class]) {
+  if (class == [UIImage class] || class == [UIColor class]) {
     return NO;
   }
 
