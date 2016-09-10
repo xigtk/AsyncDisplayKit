@@ -409,8 +409,6 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
   // Trampoline any UIKit ivars' deallocation to main
   if (ASDisplayNodeThreadIsMain() == NO) {
     [self _scheduleIvarsForMainDeallocation];
-  } else {
-    _layer.delegate = nil;
   }
 
   _subnodes = nil;
@@ -608,7 +606,13 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
     TIME_SCOPED(_debugTimeToCreateView);
     _layer = [self _layerToLoad];
     // Surpress warning for Base SDK > 10.0
-    _layer.delegate = (id<CALayerDelegate>)self;
+
+    // layer.delegate is not actually weak. If delegate isn't a view, it may return
+    // a BS value. So we give it a proxy to keep it company until it dies.
+    static int layerDelegateAssocationKey;
+    id proxy = [ASWeakProxy weakProxyWithTarget:self];
+    objc_setAssociatedObject(_layer, &layerDelegateAssocationKey, proxy, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    _layer.delegate = (id<CALayerDelegate>)proxy;
   } else {
     TIME_SCOPED(_debugTimeToCreateView);
     _view = [self _viewToLoad];
