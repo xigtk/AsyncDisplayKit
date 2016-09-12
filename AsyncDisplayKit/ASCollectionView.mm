@@ -153,6 +153,8 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     unsigned int asyncDataSourceNodeForItemAtIndexPath:1;
     unsigned int asyncDataSourceNodeBlockForItemAtIndexPath:1;
     unsigned int asyncDataSourceNumberOfSectionsInCollectionView:1;
+    unsigned int asyncDataSourceCanMoveItemAtIndexPath:1;
+    unsigned int asyncDataSourceMoveItemAtIndexPath:1;
   } _asyncDataSourceFlags;
   
   struct {
@@ -354,6 +356,8 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSourceFlags.asyncDataSourceNodeForItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeForItemAtIndexPath:)];
     _asyncDataSourceFlags.asyncDataSourceNodeBlockForItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)];
     _asyncDataSourceFlags.asyncDataSourceNumberOfSectionsInCollectionView = [_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)];
+    _asyncDataSourceFlags.asyncDataSourceCanMoveItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:canMoveItemAtIndexPath:)];
+    _asyncDataSourceFlags.asyncDataSourceMoveItemAtIndexPath = [_asyncDelegate respondsToSelector:@selector(collectionView:moveItemAtIndexPath:toIndexPath:)];
 
     // Data-source must implement collectionView:nodeForItemAtIndexPath: or collectionView:nodeBlockForItemAtIndexPath:
     ASDisplayNodeAssertTrue(_asyncDataSourceFlags.asyncDataSourceNodeBlockForItemAtIndexPath || _asyncDataSourceFlags.asyncDataSourceNodeForItemAtIndexPath);
@@ -634,6 +638,24 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
   return [_dataController numberOfRowsInSection:section];
+}
+
+- (BOOL)collectionView:(UICollectionView *)collectionView canMoveItemAtIndexPath:(nonnull NSIndexPath *)indexPath
+{
+  if (_asyncDataSourceFlags.asyncDataSourceCanMoveItemAtIndexPath) {
+    return [_asyncDataSource collectionView:self canMoveItemAtIndexPath:indexPath];
+  } else {
+    return NO;
+  }
+}
+
+- (void)collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(nonnull NSIndexPath *)sourceIndexPath toIndexPath:(nonnull NSIndexPath *)destinationIndexPath
+{
+  if (_asyncDataSourceFlags.asyncDataSourceMoveItemAtIndexPath) {
+    [_asyncDataSource collectionView:self moveItemAtIndexPath:sourceIndexPath toIndexPath:destinationIndexPath];
+  }
+  // Move node after informing data source in case they call nodeAtIndexPath:
+  [_dataController moveCompletedNodeAtIndexPath:sourceIndexPath toIndexPath:destinationIndexPath];
 }
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath

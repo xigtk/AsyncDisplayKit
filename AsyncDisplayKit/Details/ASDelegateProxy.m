@@ -61,6 +61,10 @@
           // handled by ASRangeController
           selector == @selector(numberOfSectionsInCollectionView:) ||
           selector == @selector(collectionView:numberOfItemsInSection:) ||
+
+          // reordering support
+          selector == @selector(collectionView:canMoveItemAtIndexPath:) ||
+          selector == @selector(collectionView:moveItemAtIndexPath:toIndexPath:) ||
           
           // used for ASRangeController visibility updates
           selector == @selector(collectionView:willDisplayCell:forItemAtIndexPath:) ||
