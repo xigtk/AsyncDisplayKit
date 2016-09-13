@@ -36,6 +36,13 @@ static inline BOOL ASDisplayNodeThreadIsMain()
 
 #include <memory>
 
+#define AS_SYNTHESIZE_ATOMIC_GETTER(type, name, ivar, mutex) \
+  - (type)name \
+  { \
+    ASDN::MutexLocker l(mutex); \
+    return ivar; \
+  }
+
 /**
  For use with ASDN::StaticMutex only.
  */

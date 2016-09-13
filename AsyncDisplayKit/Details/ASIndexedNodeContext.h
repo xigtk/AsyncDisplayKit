@@ -25,14 +25,26 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, strong) NSIndexPath *indexPath;
 
 /**
- * The node created by `nodeCreationOperation`. This will be nil until the operation is finished.
+ * Schedules measurement if it hasn't been scheduled already.
  */
-@property (atomic, readonly, nullable, strong) ASCellNode *node;
+- (void)scheduleMeasurement;
 
 /**
- * An operation to allocate and measure the node.
+ * Wait for measurement to complete, scheduling it if needed.
  */
-@property (nonatomic, readonly, strong) NSBlockOperation *nodeCreationOperation;
+- (void)waitForMeasurement;
+
+/**
+ * Cancels measurement. This happens on dealloc by default.
+ */
+- (void)cancelMeasurement;
+
+@property (readonly, getter=isMeasurementCancelled) BOOL measurementCancelled;
+
+/**
+ * The node, if measurement has finished without being canceled.
+ */
+@property (readonly, nullable, strong) ASCellNode *node;
 
 + (NSArray<NSIndexPath *> *)indexPathsFromContexts:(NSArray<ASIndexedNodeContext *> *)contexts;
 
