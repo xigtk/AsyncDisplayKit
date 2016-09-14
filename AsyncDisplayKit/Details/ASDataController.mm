@@ -898,6 +898,10 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
   return _externalCompletedNodes ? : _completedNodes[ASDataControllerRowNodeKind];
 }
 
+/**
+ * This method is designed to support interactive item/row movement but may behave
+ * badly if the table view or collection view is edited during interactive movement.
+ */
 - (void)moveCompletedNodeAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath
 {
   ASDisplayNodeAssertMainThread();
@@ -908,20 +912,23 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
     _itemCountsFromDataSource[newIndexPath.section] += 1;
   }
   
-  if (_externalCompletedNodes != nil) {
-    NSMutableArray *oldSection = _externalCompletedNodes[indexPath.section];
-    ASCellNode *node = oldSection[indexPath.item];
-    [oldSection removeObjectAtIndex:indexPath.item];
-    [_externalCompletedNodes[newIndexPath.section] insertObject:node atIndex:newIndexPath.item];
-  }
-
-  NSMutableArray *internalCompletedNodes = _completedNodes[ASDataControllerRowNodeKind];
-  if (internalCompletedNodes != nil) {
-    NSMutableArray *oldSection = internalCompletedNodes[indexPath.section];
-    ASCellNode *node = oldSection[indexPath.item];
-    [oldSection removeObjectAtIndex:indexPath.item];
-    [internalCompletedNodes[newIndexPath.section] insertObject:node atIndex:newIndexPath.item];
-  }
+  // Update the editing array.
+  dispatch_group_async(_editingTransactionGroup, _editingTransactionQueue, ^{
+    ASMoveElementInTwoDimensionalArray(_editingNodes[ASDataControllerRowNodeKind], indexPath, newIndexPath);
+    [_mainSerialQueue performBlockOnMainThread:^{
+      // Then update the completed arrays.
+      if (_externalCompletedNodes != nil) {
+        ASMoveElementInTwoDimensionalArray(_externalCompletedNodes, indexPath, newIndexPath);
+      }
+      
+      NSMutableArray *internalCompletedNodes = _completedNodes[ASDataControllerRowNodeKind];
+      if (internalCompletedNodes != nil) {
+        ASMoveElementInTwoDimensionalArray(internalCompletedNodes, indexPath, newIndexPath);
+      }
+    }];
+  });
+  // Wait so that our node is moved before we return.
+  [self waitUntilAllUpdatesAreCommitted];
 }
 
 #pragma mark - Dealloc
