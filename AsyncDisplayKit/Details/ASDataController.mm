@@ -901,6 +901,13 @@ NSString * const ASDataControllerRowNodeKind = @"_ASDataControllerRowNodeKind";
 - (void)moveCompletedNodeAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath
 {
   ASDisplayNodeAssertMainThread();
+  
+  // Update the item counts from the data source optimistically (assume they did the move correctly).
+  if (_itemCountsFromDataSourceAreValid) {
+    _itemCountsFromDataSource[indexPath.section] -= 1;
+    _itemCountsFromDataSource[newIndexPath.section] += 1;
+  }
+  
   if (_externalCompletedNodes != nil) {
     NSMutableArray *oldSection = _externalCompletedNodes[indexPath.section];
     ASCellNode *node = oldSection[indexPath.item];
