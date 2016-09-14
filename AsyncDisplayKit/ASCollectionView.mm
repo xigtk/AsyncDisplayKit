@@ -358,7 +358,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
     _asyncDataSourceFlags.asyncDataSourceNodeBlockForItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:nodeBlockForItemAtIndexPath:)];
     _asyncDataSourceFlags.asyncDataSourceNumberOfSectionsInCollectionView = [_asyncDataSource respondsToSelector:@selector(numberOfSectionsInCollectionView:)];
     _asyncDataSourceFlags.asyncDataSourceCanMoveItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:canMoveItemAtIndexPath:)];
-    _asyncDataSourceFlags.asyncDataSourceMoveItemAtIndexPath = [_asyncDelegate respondsToSelector:@selector(collectionView:moveItemAtIndexPath:toIndexPath:)];
+    _asyncDataSourceFlags.asyncDataSourceMoveItemAtIndexPath = [_asyncDataSource respondsToSelector:@selector(collectionView:moveItemAtIndexPath:toIndexPath:)];
 
     // Data-source must implement collectionView:nodeForItemAtIndexPath: or collectionView:nodeBlockForItemAtIndexPath:
     ASDisplayNodeAssertTrue(_asyncDataSourceFlags.asyncDataSourceNodeBlockForItemAtIndexPath || _asyncDataSourceFlags.asyncDataSourceNodeForItemAtIndexPath);
