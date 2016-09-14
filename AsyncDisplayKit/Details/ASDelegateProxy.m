@@ -81,8 +81,6 @@
           selector == @selector(scrollViewDidEndDragging:willDecelerate:) ||
           
           // intercepted due to not being supported by ASCollectionView (prevent bugs caused by usage)
-          selector == @selector(collectionView:canMoveItemAtIndexPath:) ||
-          selector == @selector(collectionView:moveItemAtIndexPath:toIndexPath:) ||
           selector == @selector(collectionView:willDisplaySupplementaryView:forElementKind:atIndexPath:) ||
           selector == @selector(collectionView:didEndDisplayingSupplementaryView:forElementOfKind:atIndexPath:)
           );

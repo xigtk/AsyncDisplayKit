@@ -108,6 +108,7 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   
   CGSize _lastBoundsSizeUsedForMeasuringNodes;
   BOOL _ignoreNextBoundsSizeChangeForMeasuringNodes;
+  BOOL _updatingInteractiveMovementTargetPosition;
   
   NSMutableSet *_registeredSupplementaryKinds;
   
@@ -520,6 +521,13 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   [super selectItemAtIndexPath:indexPath animated:animated scrollPosition:scrollPosition];
 }
 
+- (void)updateInteractiveMovementTargetPosition:(CGPoint)targetPosition
+{
+  _updatingInteractiveMovementTargetPosition = YES;
+  [super updateInteractiveMovementTargetPosition:targetPosition];
+  _updatingInteractiveMovementTargetPosition = NO;
+}
+
 #pragma mark Internal
 
 /**
@@ -615,10 +623,19 @@ static NSString * const kCellReuseIdentifier = @"_ASCollectionViewCell";
   [_dataController reloadRowsAtIndexPaths:indexPaths withAnimationOptions:kASCollectionViewAnimationNone];
 }
 
+/**
+ * @discussion UICollectionView calls this method on self in response to the user calling `updateInteractiveMovementTargetPosition`
+ * to perform the tentative reordering. We aren't supposed to know about that and shouldn't get involved
+ * so in that case, we forward the call directly to super.
+ */
 - (void)moveItemAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath
 {
   ASDisplayNodeAssertMainThread();
-  [_dataController moveRowAtIndexPath:indexPath toIndexPath:newIndexPath withAnimationOptions:kASCollectionViewAnimationNone];
+  if (_updatingInteractiveMovementTargetPosition) {
+    [super moveItemAtIndexPath:indexPath toIndexPath:newIndexPath];
+  } else {
+    [_dataController moveRowAtIndexPath:indexPath toIndexPath:newIndexPath withAnimationOptions:kASCollectionViewAnimationNone];
+  }
 }
 
 - (NSString *)__reuseIdentifierForKind:(NSString *)kind
