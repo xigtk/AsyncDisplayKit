@@ -10,7 +10,7 @@
 
 #import <AsyncDisplayKit/ASDimension.h>
 #import <AsyncDisplayKit/ASStackLayoutDefines.h>
-#import <AsyncDisplayKit/ASStackLayoutable.h>
+#import <AsyncDisplayKit/ASStackLayoutElement.h>
 #import <AsyncDisplayKit/ASStaticLayoutable.h>
 
 #import <AsyncDisplayKit/ASLayoutElementPrivate.h>
@@ -154,7 +154,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ASLayoutElementStyle : NSObject <ASStackLayoutable, ASStaticLayoutable>
 
-
 #pragma mark - Sizing
 
 // TODO: Move to internal method?
@@ -220,7 +219,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setExactSizeWithCGSize:(CGSize)size;
 
 
-#pragma mark - ASStackLayoutable
+#pragma mark - ASStackLayoutElement
 
 /**
  * @abstract Additional space to place before this object in the stacking direction.
@@ -270,7 +269,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CGFloat descender;
 
 
-#pragma mark - ASStaticLayoutable
+#pragma mark - ASStaticLayoutElement
 
 /**
  * @abstract The position of this object within its parent spec.
