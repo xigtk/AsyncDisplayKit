@@ -238,7 +238,7 @@ typedef std::map<unsigned long, id<ASLayoutable>, std::less<unsigned long>> ASCh
 }
 
 // Subclasses can override this method to return NO, because upward propagation is not enabled if a layout
-// specification has more than one child. Currently ASStackLayoutSpec and ASStaticLayoutSpec are currently
+// specification has more than one child. Currently ASStackLayoutSpec and ASAbsoluteLayoutSpec are currently
 // the specifications that are known to have more than one.
 - (BOOL)supportsUpwardPropagation
 {

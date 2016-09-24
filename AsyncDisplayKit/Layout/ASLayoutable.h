@@ -11,7 +11,7 @@
 #import <AsyncDisplayKit/ASDimension.h>
 #import <AsyncDisplayKit/ASStackLayoutDefines.h>
 #import <AsyncDisplayKit/ASStackLayoutable.h>
-#import <AsyncDisplayKit/ASStaticLayoutable.h>
+#import <AsyncDisplayKit/ASAbsoluteLayoutable.h>
 
 #import <AsyncDisplayKit/ASLayoutablePrivate.h>
 #import <AsyncDisplayKit/ASEnvironment.h>
@@ -152,7 +152,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - ASLayoutableStyle
 
-@interface ASLayoutableStyle : NSObject <ASStackLayoutable, ASStaticLayoutable>
+@interface ASLayoutableStyle : NSObject <ASStackLayoutable, ASAbsoluteLayoutable>
 
 
 #pragma mark - Sizing
@@ -270,7 +270,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CGFloat descender;
 
 
-#pragma mark - ASStaticLayoutable
+#pragma mark - ASAbsoluteLayoutable
 
 /**
  * @abstract The position of this object within its parent spec.
