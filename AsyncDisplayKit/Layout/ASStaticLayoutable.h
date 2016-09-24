@@ -1,5 +1,5 @@
 //
-//  ASStaticLayoutable.h
+//  ASStaticLayoutElement.h
 //  AsyncDisplayKit
 //
 //  Copyright (c) 2014-present, Facebook, Inc.  All rights reserved.
@@ -11,9 +11,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- *  Layout options that can be defined for an ASLayoutable being added to a ASStaticLayoutSpec. 
+ *  Layout options that can be defined for an ASLayoutElement being added to a ASStaticLayoutSpec. 
  */
-@protocol ASStaticLayoutable
+@protocol ASStaticLayoutElement
 
 /**
  * @abstract The position of this object within its parent spec.
