@@ -30,19 +30,19 @@ final class TailLoadingCellNode: ASCellNode {
     text.attributedText = NSAttributedString(
       string: "Loading…",
       attributes: [
-        NSFontAttributeName: UIFont.systemFontOfSize(12),
-        NSForegroundColorAttributeName: UIColor.lightGrayColor(),
+        NSFontAttributeName: UIFont.systemFont(ofSize: 12),
+        NSForegroundColorAttributeName: UIColor.lightGray,
         NSKernAttributeName: -0.3
       ])
     addSubnode(spinner)
   }
 
-  override func layoutSpecThatFits(constrainedSize: ASSizeRange) -> ASLayoutSpec {
+  override func layoutSpecThatFits(_ constrainedSize: ASSizeRange) -> ASLayoutSpec {
     return ASStackLayoutSpec(
-      direction: .Horizontal,
+      direction: .horizontal,
       spacing: 16,
-      justifyContent: .Center,
-      alignItems: .Center,
+      justifyContent: .center,
+      alignItems: .center,
       children: [ text, spinner ])
   }
 }
@@ -53,9 +53,9 @@ final class SpinnerNode: ASDisplayNode {
   }
 
   override init() {
-    super.init(viewBlock: { UIActivityIndicatorView(activityIndicatorStyle: .Gray) }, didLoadBlock: nil)
+    super.init(viewBlock: { UIActivityIndicatorView(activityIndicatorStyle: .gray) }, didLoad: nil)
     
-    size.minHeight = ASDimensionMakeWithPoints(44.0)
+    style.minHeight = ASDimensionMakeWithPoints(44.0)
   }
 
   override func didLoad() {

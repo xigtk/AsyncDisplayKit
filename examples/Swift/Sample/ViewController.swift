@@ -18,7 +18,7 @@
 import UIKit
 import AsyncDisplayKit
 
-final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate {
+final class ViewController: ASViewController<ASTableNode>, ASTableDataSource, ASTableDelegate {
 
   struct State {
     var itemCount: Int
@@ -27,20 +27,16 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
   }
 
   enum Action {
-    case BeginBatchFetch
-    case EndBatchFetch(resultCount: Int)
+    case beginBatchFetch
+    case endBatchFetch(resultCount: Int)
   }
 
-  var tableNode: ASTableNode {
-    return node as! ASTableNode
-  }
-
-  private(set) var state: State = .empty
+  fileprivate(set) var state: State = .empty
 
   init() {
     super.init(node: ASTableNode())
-    tableNode.delegate = self
-    tableNode.dataSource = self
+    node.delegate = self
+    node.dataSource = self
   }
 
   required init?(coder aDecoder: NSCoder) {
@@ -49,26 +45,26 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
 
   // MARK: ASTableView data source and delegate.
 
-  func tableView(tableView: ASTableView, nodeForRowAtIndexPath indexPath: NSIndexPath) -> ASCellNode {
+  func tableView(_ tableView: ASTableView, nodeForRowAt indexPath: IndexPath) -> ASCellNode {
     // Should read the row count directly from table view but
     // https://github.com/facebook/AsyncDisplayKit/issues/1159
     let rowCount = self.tableView(tableView, numberOfRowsInSection: 0)
 
-    if state.fetchingMore && indexPath.row == rowCount - 1 {
+    if state.fetchingMore && (indexPath as NSIndexPath).row == rowCount - 1 {
       return TailLoadingCellNode()
     }
 
     let node = ASTextCellNode()
-    node.text = String(format: "[%ld.%ld] says hello!", indexPath.section, indexPath.row)
+    node.text = String(format: "[%ld.%ld] says hello!", (indexPath as NSIndexPath).section, (indexPath as NSIndexPath).row)
 
     return node
   }
 
-  func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+  func numberOfSections(in tableView: UITableView) -> Int {
     return 1
   }
 
-  func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     var count = state.itemCount
     if state.fetchingMore {
       count += 1
@@ -76,17 +72,17 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
     return count
   }
 
-  func tableView(tableView: ASTableView, willBeginBatchFetchWithContext context: ASBatchContext) {
+  func tableView(_ tableView: ASTableView, willBeginBatchFetchWith context: ASBatchContext) {
     /// This call will come in on a background thread. Switch to main
     /// to add our spinner, then fire off our fetch.
-    dispatch_async(dispatch_get_main_queue()) {
+    DispatchQueue.main.async {
       let oldState = self.state
-      self.state = ViewController.handleAction(.BeginBatchFetch, fromState: oldState)
+      self.state = ViewController.handleAction(.beginBatchFetch, fromState: oldState)
       self.renderDiff(oldState)
     }
 
     ViewController.fetchDataWithCompletion { resultCount in
-      let action = Action.EndBatchFetch(resultCount: resultCount)
+      let action = Action.endBatchFetch(resultCount: resultCount)
       let oldState = self.state
       self.state = ViewController.handleAction(action, fromState: oldState)
       self.renderDiff(oldState)
@@ -94,17 +90,18 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
     }
   }
 
-  private func renderDiff(oldState: State) {
-    let tableView = tableNode.view
-    tableView.beginUpdates()
+  fileprivate func renderDiff(_ oldState: State) {
+    let tableView = node.view
+    tableView?.beginUpdates()
+	
 
     // Add or remove items
     let rowCountChange = state.itemCount - oldState.itemCount
     if rowCountChange > 0 {
       let indexPaths = (oldState.itemCount..<state.itemCount).map { index in
-        NSIndexPath(forRow: index, inSection: 0)
+        IndexPath(row: index, section: 0)
       }
-      tableView.insertRowsAtIndexPaths(indexPaths, withRowAnimation: .None)
+      tableView?.insertRows(at: indexPaths, with: .none)
     } else if rowCountChange < 0 {
       assertionFailure("Deleting rows is not implemented. YAGNI.")
     }
@@ -113,33 +110,33 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
     if state.fetchingMore != oldState.fetchingMore {
       if state.fetchingMore {
         // Add spinner.
-        let spinnerIndexPath = NSIndexPath(forRow: state.itemCount, inSection: 0)
-        tableView.insertRowsAtIndexPaths([ spinnerIndexPath ], withRowAnimation: .None)
+        let spinnerIndexPath = IndexPath(row: state.itemCount, section: 0)
+        tableView?.insertRows(at: [ spinnerIndexPath ], with: .none)
       } else {
         // Remove spinner.
-        let spinnerIndexPath = NSIndexPath(forRow: oldState.itemCount, inSection: 0)
-        tableView.deleteRowsAtIndexPaths([ spinnerIndexPath ], withRowAnimation: .None)
+        let spinnerIndexPath = IndexPath(row: oldState.itemCount, section: 0)
+        tableView?.deleteRows(at: [ spinnerIndexPath ], with: .none)
       }
     }
-    tableView.endUpdatesAnimated(false, completion: nil)
+    tableView?.endUpdates(animated: false, completion: nil)
   }
 
   /// (Pretend) fetches some new items and calls the
   /// completion handler on the main thread.
-  private static func fetchDataWithCompletion(completion: (Int) -> Void) {
-    let time = dispatch_time(DISPATCH_TIME_NOW, Int64(NSTimeInterval(NSEC_PER_SEC) * 1.0))
-    dispatch_after(time, dispatch_get_main_queue()) {
+  fileprivate static func fetchDataWithCompletion(_ completion: @escaping (Int) -> Void) {
+    let time = DispatchTime.now() + Double(Int64(TimeInterval(NSEC_PER_SEC) * 1.0)) / Double(NSEC_PER_SEC)
+    DispatchQueue.main.asyncAfter(deadline: time) {
       let resultCount = Int(arc4random_uniform(20))
       completion(resultCount)
     }
   }
 
-  private static func handleAction(action: Action, fromState state: State) -> State {
+  fileprivate static func handleAction(_ action: Action, fromState state: State) -> State {
     var state = state
     switch action {
-    case .BeginBatchFetch:
+    case .beginBatchFetch:
       state.fetchingMore = true
-    case let .EndBatchFetch(resultCount):
+    case let .endBatchFetch(resultCount):
       state.itemCount += resultCount
       state.fetchingMore = false
     }
