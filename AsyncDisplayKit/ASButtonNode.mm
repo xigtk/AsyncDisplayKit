@@ -519,7 +519,7 @@
 #endif
     stack.style.width = ASDimensionMake(ASDimensionUnitPoints, self.preferredFrameSize.width);
     stack.style.height = ASDimensionMake(ASDimensionUnitPoints, self.preferredFrameSize.height);
-    spec = [ASAbsoluteLayoutSpec staticLayoutSpecWithChildren:@[stack]];
+    spec = [ASAbsoluteLayoutSpec absoluteLayoutSpecWithChildren:@[stack]];
   }
 #pragma clang diagnostic pop
   
