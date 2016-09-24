@@ -10,7 +10,7 @@
 
 #import <AsyncDisplayKit/ASDimension.h>
 #import <AsyncDisplayKit/ASStackLayoutDefines.h>
-#import <AsyncDisplayKit/ASStackLayoutable.h>
+#import <AsyncDisplayKit/ASStackLayoutElement.h>
 #import <AsyncDisplayKit/ASStaticLayoutable.h>
 
 #import <AsyncDisplayKit/ASLayoutablePrivate.h>
@@ -152,7 +152,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - ASLayoutableStyle
 
-@interface ASLayoutableStyle : NSObject <ASStackLayoutable, ASStaticLayoutable>
+@interface ASLayoutableStyle : NSObject <ASStackLayoutElement, ASStaticLayoutable>
 
 
 #pragma mark - Sizing
@@ -220,7 +220,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setExactSizeWithCGSize:(CGSize)size;
 
 
-#pragma mark - ASStackLayoutable
+#pragma mark - ASStackLayoutElement
 
 /**
  * @abstract Additional space to place before this object in the stacking direction.
