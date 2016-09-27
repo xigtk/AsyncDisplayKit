@@ -59,7 +59,7 @@ final class ViewController: ASViewController, ASTableDataSource, ASTableDelegate
     }
 
     let node = ASTextCellNode()
-    node.text = String(format: "[%ld.%ld] says hello!", indexPath.section, indexPath.row)
+    node.text = "😗🙄🤑🤓😶"
 
     return node
   }
