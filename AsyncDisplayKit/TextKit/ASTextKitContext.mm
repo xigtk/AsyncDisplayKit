@@ -40,6 +40,16 @@
     
     // Create the TextKit component stack with our default configuration.
     _textStorage = (attributedString ? [[NSTextStorage alloc] initWithAttributedString:attributedString] : [[NSTextStorage alloc] init]);
+    
+    [_textStorage enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, _textStorage.length) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+      if ([value isKindOfClass:[UIFont class]]) {
+        UIFont *font = (UIFont *)value;
+        if ([font.fontName isEqualToString:@".AppleColorEmojiUI"]) {
+          [_textStorage addAttribute:NSFontAttributeName value:[UIFont fontWithName:@"Apple Color Emoji" size:font.pointSize] range:range];
+        }
+      }
+    }];
+    
     _layoutManager = [[ASLayoutManager alloc] init];
     _layoutManager.usesFontLeading = NO;
     [_textStorage addLayoutManager:_layoutManager];
