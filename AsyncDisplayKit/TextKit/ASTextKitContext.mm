@@ -47,6 +47,17 @@
     } else {
       _textStorage = (attributedString ? [[NSTextStorage alloc] initWithAttributedString:attributedString] : [[NSTextStorage alloc] init]);
     }
+    
+    BOOL isIOS10OrGreater = [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 10}];
+    if (isIOS10OrGreater) {
+      [_textStorage enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, _textStorage.length) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+        UIFont *font = (UIFont *)value;
+        if ([font.fontName isEqualToString:@".AppleColorEmojiUI"]) {
+          [_textStorage addAttribute:NSFontAttributeName value:[UIFont fontWithName:@"AppleColorEmoji" size:font.pointSize] range:range];
+        }
+      }];
+    }
+  
     _layoutManager = layoutCreationBlock ? layoutCreationBlock() : [[ASLayoutManager alloc] init];
     _layoutManager.usesFontLeading = NO;
     _layoutManager.delegate = layoutManagerDelegate;
