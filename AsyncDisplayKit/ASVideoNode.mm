@@ -389,16 +389,18 @@ static NSString * const kStatus = @"status";
   }
 }
 
+- (void)__clearFetchedData
+{
+  ASDN::MutexLocker l(_propertyLock);
+  
+  self.player = nil;
+  self.currentItem = nil;
+}
+
 - (void)clearFetchedData
 {
   [super clearFetchedData];
-  
-  {
-    ASDN::MutexLocker l(_propertyLock);
-
-    self.player = nil;
-    self.currentItem = nil;
-  }
+  [self __clearFetchedData];
 }
 
 - (void)visibleStateDidChange:(BOOL)isVisible
@@ -445,7 +447,7 @@ static NSString * const kStatus = @"status";
     return;
   }
 
-  [self clearFetchedData];
+  [self __clearFetchedData]; // clear the player but not the underlying ASNetworkImageNode to avoid flicker
 
   _asset = asset;
 
